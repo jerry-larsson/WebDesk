@@ -38,9 +38,9 @@
           <template v-for="window in windowManager.windows.value" :key="window.id">
             <v-tooltip location="top" :text="window.wdProps.title">
               <template #activator="{ props }">
-                <v-btn v-bind="props" :icon="window.wdProps.icon"
+                <v-btn v-bind="props" :icon="window.wdProps.icon ?? true"
                   :variant="window.id === windowManager.focusedWindow.value?.id ? 'elevated' : 'text'" rounded
-                  @click="window.state.isMinimized ? windowManager.focusWindow(window.id) : windowManager.minimizeWindow(window.id)"></v-btn>
+                  @click="taskbarIconClick(window)"></v-btn>
               </template>
             </v-tooltip>
           </template>
@@ -56,7 +56,7 @@ import vintageBackground from '@/assets/backgrounds/vintage.png'
 import WdDesktopIcon from '@/components/framework/WdDesktopIcon.vue'
 import { useTopMenu } from '@/composables/useTopMenu'
 import type { WdTopMenuItem } from '@/composables/useTopMenu'
-import { useWindowManager } from '@/composables/useWindowManager'
+import { useWindowManager, type WdManagedWindow } from '@/composables/useWindowManager'
 import { uuidNoDash } from './utils/uuitHelper'
 import { format } from 'date-fns';
 
@@ -76,7 +76,7 @@ const focusedWindowTitle = computed(() => {
   return typeof rawTitle === 'string' && rawTitle.trim() ? rawTitle : 'Desktop'
 })
 
-const mainMenuItems = ref<WdTopMenuItem[]>([
+const mainMenuItems = computed<WdTopMenuItem[]>(() => [
   {
     id: '1', label: 'Hello',
     children: [],
@@ -90,6 +90,13 @@ const mainMenuItems = ref<WdTopMenuItem[]>([
     onClick: () => {
       windowManager.openWindow('projects-window', { id: 'projects-window' })
     }
+  },
+  {
+    id: 'blank', label: 'Blankt fönster',
+    children: [],
+    onClick: () => {
+      windowManager.openWindow('blank-window', { id: 'blank-window-' + windowManager.windows.value.length + 1 })
+    }
   }
 ]);
 
@@ -100,6 +107,14 @@ onBeforeUnmount(() => {
 onMounted(() => {
   windowManager.openPersistedWindows()
 })
+
+function taskbarIconClick(window: WdManagedWindow) {
+  window.state.isMinimized 
+    ? windowManager.focusWindow(window.id) 
+    : (window.state.isFocused 
+      ? windowManager.minimizeWindow(window.id) 
+      : windowManager.focusWindow(window.id));
+}
 </script>
 
 <style scoped>

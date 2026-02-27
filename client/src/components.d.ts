@@ -11,6 +11,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    BlankWindow: typeof import('./components/windows/BlankWindow.vue')['default']
+    copy: typeof import('./components/windows/HelloWorldWindow copy.vue')['default']
     HelloWorldWindow: typeof import('./components/windows/HelloWorldWindow.vue')['default']
     ProjectsWindow: typeof import('./components/windows/ProjectsWindow.vue')['default']
     WdDesktop: typeof import('./components/framework/WdDesktop.vue')['default']

@@ -1,12 +1,6 @@
 <template>
-  <wd-window
-    :title="`Hello world - ${testParameter}`"
-    icon="mdi-account"
-    :initial-width="300"
-    :initial-height="200"
-    :window-id="windowId"
-    :menu-items="menuItems"
-  >
+  <wd-window :title="`Hello world - ${testParameter}`" icon="mdi-account" :initial-width="300" :initial-height="200"
+    :window-id="windowId" :menu-items="menuItems">
     <p class=mt-0>Value: {{ testParameter }}</p>
 
     <template #footer>
