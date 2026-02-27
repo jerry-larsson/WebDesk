@@ -1,42 +1,51 @@
 <template>
-  <v-sheet :class="windowClasses" :color="windowColor" :elevation="windowElevation" :style="windowStyle" tag="article"
-    @pointerdown="bringToFront">
-    <header :class="titlebarClasses" @pointerdown="startDrag">
-      <div v-if="$slots['titlebar-start'] || !!icon" class="wd-window__titlebar-start">
-        <slot name="titlebar-start" />
-        <v-icon v-if="icon" :icon="icon" size="18" />
-      </div>
+  <transition name="wd-window-minimize">
+    <v-sheet
+      v-show="!isMinimized"
+      :class="windowClasses"
+      :color="windowColor"
+      :elevation="windowElevation"
+      :style="windowStyle"
+      tag="article"
+      @pointerdown="bringToFront"
+    >
+      <header :class="titlebarClasses" @pointerdown="startDrag">
+        <div v-if="$slots['titlebar-start'] || !!icon" class="wd-window__titlebar-start">
+          <slot name="titlebar-start" />
+          <v-icon v-if="icon" :icon="icon" size="18" />
+        </div>
 
-      <div :class="titleClasses" class="flex-fill">
-        <slot name="title">{{ title }}</slot>
-      </div>
+        <div :class="titleClasses" class="flex-fill">
+          <slot name="title">{{ title }}</slot>
+        </div>
 
-      <div class="wd-window__titlebar-end" @pointerdown.stop>
-        <slot name="titlebar-end">
-          <v-btn-group class="wd-window__titlebar-actions" variant="text">
-            <v-btn density="comfortable" icon="mdi-minus" size="small" @click.stop="onMinimizeClick" />
-            <v-btn density="comfortable" :icon="isMaximized ? 'mdi-window-restore' : 'mdi-window-maximize'" size="small"
-              @click.stop="onMaximizeClick" />
-            <v-btn class="wd-window__close-btn" density="comfortable" icon="mdi-close" size="small"
-              @click.stop="onCloseClick" />
-          </v-btn-group>
-        </slot>
-      </div>
-    </header>
+        <div class="wd-window__titlebar-end" @pointerdown.stop>
+          <slot name="titlebar-end">
+            <v-btn-group class="wd-window__titlebar-actions" variant="text">
+              <v-btn density="comfortable" icon="mdi-minus" size="small" @click.stop="onMinimizeClick" />
+              <v-btn density="comfortable" :icon="isMaximized ? 'mdi-window-restore' : 'mdi-window-maximize'" size="small"
+                @click.stop="onMaximizeClick" />
+              <v-btn class="wd-window__close-btn" density="comfortable" icon="mdi-close" size="small"
+                @click.stop="onCloseClick" />
+            </v-btn-group>
+          </slot>
+        </div>
+      </header>
 
-    <section class="wd-window__content">
-      <slot />
-    </section>
+      <section class="wd-window__content">
+        <slot />
+      </section>
 
-    <footer v-if="$slots.footer" :class="footerClasses">
-      <slot name="footer" />
-    </footer>
+      <footer v-if="$slots.footer" :class="footerClasses">
+        <slot name="footer" />
+      </footer>
 
-    <v-overlay :model-value="!isFocused" attach persistent class="wd-window__dim-overlay"></v-overlay>
+      <v-overlay :model-value="!isFocused" attach persistent class="wd-window__dim-overlay"></v-overlay>
 
-    <span v-for="handle in resizeHandles" :key="handle" class="wd-window__resize-handle" :class="`is-${handle}`"
-      @pointerdown="(event) => startResize(event, handle)" />
-  </v-sheet>
+      <span v-for="handle in resizeHandles" :key="handle" class="wd-window__resize-handle" :class="`is-${handle}`"
+        @pointerdown="(event) => startResize(event, handle)" />
+    </v-sheet>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -75,6 +84,7 @@ const props = withDefaults(
     icon?: string
     windowId?: string
     menuItems?: readonly WdTopMenuItem[]
+    minimized?: boolean
   }>(),
   {
     title: 'Window',
@@ -90,6 +100,7 @@ const props = withDefaults(
     icon: undefined,
     windowId: undefined,
     menuItems: undefined,
+    minimized: false,
   },
 )
 const emit = defineEmits<{
@@ -104,6 +115,7 @@ const emit = defineEmits<{
     height: number
     zIndex: number
     isFocused: boolean
+    isMinimized: boolean
     isMaximized: boolean
     restoreBounds: WindowBounds | null
   }]
@@ -122,6 +134,7 @@ const snappedSide = ref<SnapSide>(props.maximized ? 'maximized' : null)
 const restoreBounds = ref<WindowBounds | null>(props.restoreBounds ?? null)
 const isInteracting = ref(false)
 const isFocused = computed(() => desktop?.activeWindowId.value === runtimeWindowId)
+const isMinimized = computed(() => !!props.minimized)
 const isMaximized = computed(() => snappedSide.value === 'maximized')
 const registeredMenuWindowId = ref<string | null>(null)
 
@@ -208,6 +221,9 @@ const onCloseClick = () => {
 
 const onMinimizeClick = () => {
   emit('minimize')
+  if (desktop?.activeWindowId.value === runtimeWindowId) {
+    desktop.activeWindowId.value = null
+  }
 }
 
 const onMaximizeClick = () => {
@@ -477,7 +493,9 @@ onMounted(() => {
       winHeight.value = desktopRect.height
     }
   }
-  bringToFront()
+  if (!props.minimized) {
+    bringToFront()
+  }
 })
 
 const syncMenuRegistration = () => {
@@ -522,7 +540,7 @@ watch(
 )
 
 watch(
-  [posX, posY, winWidth, winHeight, activeZIndex, isFocused, isMaximized, restoreBounds],
+  [posX, posY, winWidth, winHeight, activeZIndex, isFocused, isMinimized, isMaximized, restoreBounds],
   () => {
     emit('stateChange', {
       x: posX.value,
@@ -531,6 +549,7 @@ watch(
       height: winHeight.value,
       zIndex: activeZIndex.value,
       isFocused: isFocused.value,
+      isMinimized: isMinimized.value,
       isMaximized: isMaximized.value,
       restoreBounds: restoreBounds.value ? { ...restoreBounds.value } : null,
     })
@@ -725,5 +744,18 @@ watch(
   bottom: -6px;
   right: -6px;
   cursor: nwse-resize;
+}
+
+.wd-window-minimize-enter-active,
+.wd-window-minimize-leave-active {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 180ms ease;
+}
+
+.wd-window-minimize-enter-from,
+.wd-window-minimize-leave-to {
+  opacity: 0;
+  transform: translateY(160px) scale(0.35);
 }
 </style>

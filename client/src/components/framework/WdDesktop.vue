@@ -11,6 +11,7 @@
         :is="window.component"
         v-bind="{ ...window.props, windowId: window.id }"
         @close="windowManager.closeWindow(window.id)"
+        @minimize="windowManager.minimizeWindow(window.id)"
         @props-change="handleWindowPropsChange(window.id, $event)"
         @state-change="handleWindowStateChange(window.id, $event)"
       />
@@ -78,6 +79,9 @@ const handlePointerDown = (event: PointerEvent) => {
 
 const handleWindowStateChange = (id: string, state: WdManagedWindowState) => {
   windowManager.updateWindowState(id, state)
+  if (state.isMinimized && state.isFocused) {
+    activeWindowId.value = null
+  }
 }
 
 const handleWindowPropsChange = (id: string, props: Record<string, unknown>) => {

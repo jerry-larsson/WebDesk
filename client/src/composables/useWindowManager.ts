@@ -20,6 +20,7 @@ export interface WdManagedWindowState {
   height: number
   zIndex: number
   isFocused: boolean
+  isMinimized: boolean
   isMaximized: boolean
   restoreBounds: {
     x: number
@@ -43,6 +44,7 @@ const DEFAULT_WINDOW_STATE: WdManagedWindowState = {
   height: 360,
   zIndex: 1,
   isFocused: false,
+  isMinimized: false,
   isMaximized: false,
   restoreBounds: null,
 }
@@ -59,6 +61,7 @@ const NON_PERSISTED_WINDOW_PROP_KEYS = new Set([
   'height',
   'zIndex',
   'maximized',
+  'minimized',
   'restoreBounds',
   'windowId',
   'menuItems',
@@ -210,6 +213,7 @@ const openWindow = (name: string, options: WdOpenWindowOptions) => {
     width: initialState.width,
     height: initialState.height,
     zIndex: initialState.zIndex,
+    minimized: initialState.isMinimized,
     maximized: initialState.isMaximized,
     restoreBounds: initialState.restoreBounds ? { ...initialState.restoreBounds } : null,
   }
@@ -290,6 +294,38 @@ const updateWindowProps = (id: string, props: Record<string, unknown>) => {
   window.wdProps = { ...props }
 }
 
+const setWindowMinimized = (id: string, minimized: boolean) => {
+  const window = windowsRef.value.find(item => item.id === id)
+  if (!window) return false
+
+  window.props = {
+    ...window.props,
+    minimized,
+  }
+  window.state = {
+    ...window.state,
+    isMinimized: minimized,
+    isFocused: minimized ? false : window.state.isFocused,
+  }
+
+  const previous = persistedWindows.get(id)
+  persistedWindows.set(id, {
+    name: window.name,
+    props: previous?.props ?? {},
+    state: {
+      ...DEFAULT_WINDOW_STATE,
+      ...(previous?.state ?? {}),
+      ...window.state,
+      isFocused: false,
+    },
+  })
+  schedulePersistedStatesWrite()
+  return true
+}
+
+const minimizeWindow = (id: string) => setWindowMinimized(id, true)
+const restoreWindow = (id: string) => setWindowMinimized(id, false)
+
 const openPersistedWindows = () => {
   const opened: string[] = []
   const skipped: string[] = []
@@ -320,7 +356,17 @@ const setFocusWindowHandler = (handler: ((id: string) => boolean) | null) => {
 
 const focusWindow = (id: string) => {
   if (!id.trim()) return false
-  if (!windowsRef.value.some(window => window.id === id)) return false
+  const targetWindow = windowsRef.value.find(window => window.id === id)
+  if (!targetWindow) return false
+
+  if (targetWindow.state.isMinimized) {
+    restoreWindow(id)
+    requestAnimationFrame(() => {
+      focusWindowHandler?.(id)
+    })
+    return true
+  }
+
   return focusWindowHandler ? focusWindowHandler(id) : false
 }
 
@@ -343,5 +389,7 @@ export const useWindowManager = () => {
     openPersistedWindows,
     focusWindow,
     setFocusWindowHandler,
+    minimizeWindow,
+    restoreWindow,
   }
 }

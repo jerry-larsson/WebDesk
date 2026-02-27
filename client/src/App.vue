@@ -33,7 +33,7 @@
               <template #activator="{ props }">
                 <v-btn v-bind="props" :icon="window.wdProps.icon"
                   :variant="window.id === windowManager.focusedWindow.value?.id ? 'elevated' : 'text'" rounded
-                  @click="windowManager.focusWindow(window.id)"></v-btn>
+                  @click="window.state.isMinimized ? windowManager.focusWindow(window.id) : windowManager.minimizeWindow(window.id)"></v-btn>
               </template>
             </v-tooltip>
           </template>
