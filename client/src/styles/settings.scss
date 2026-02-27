@@ -8,3 +8,10 @@
 // @use 'vuetify/settings' with (
 //   $color-pack: false
 // );
+
+@use 'vuetify/settings' with (
+  // $body-font-family: "Inter",
+  $label-opacity: var(--v-high-emphasis-opacity),
+  $font-size-root: 14px,   // base
+  $field-font-size: 14px   // text fields (VField/VTextField/VSelect etc)
+);
