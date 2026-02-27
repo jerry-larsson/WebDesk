@@ -8,7 +8,7 @@
               <template #activator="{ props: activatorProps }">
                 <v-btn v-if="!$slots.activator" v-bind="activatorProps" class="px-2" density="comfortable" rounded="0"
                   variant="text">
-                  <span class="text-body-large font-weight-bold">Noex WebDesk</span>
+                  <span class="text-body-large font-weight-bold">WebDesk</span>
                 </v-btn>
 
                 <slot name="activator" v-bind="activatorProps"></slot>
@@ -16,11 +16,6 @@
 
               <wd-top-menu-dropdown :items="mainMenuItems" />
             </v-menu>
-
-            <!-- <v-btn density="comfortable" variant="text"
-              @click="windowManager.openWindow('HelloWorldWindow', { id: 'hello-world-' + windowManager.windows.value.length + 1, props: { testParameter: uuidNoDash() } })">
-              Add window...
-            </v-btn> -->
 
             <wd-top-menu-items :items="focusedMenuItems" />
           </template>

@@ -582,8 +582,8 @@ watch(
   align-items: center;
   gap: 12px;
   padding: 0 12px;
-  background-color: inherit;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.14);
+  // background-color: inherit;
+  // border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.14);
   cursor: move;
   touch-action: none;
 }
