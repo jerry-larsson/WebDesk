@@ -52,6 +52,23 @@ const windowsRef = ref<WdManagedWindow[]>([])
 const persistedWindows = new Map<string, WdPersistedWindowRecord>()
 let persistTimer: ReturnType<typeof setTimeout> | null = null
 let focusWindowHandler: ((id: string) => boolean) | null = null
+const NON_PERSISTED_WINDOW_PROP_KEYS = new Set([
+  'x',
+  'y',
+  'width',
+  'height',
+  'zIndex',
+  'maximized',
+  'restoreBounds',
+  'windowId',
+  'menuItems',
+  'minWidth',
+  'minHeight',
+  'title',
+  'icon',
+  'initialWidth',
+  'initialHeight',
+])
 
 const normalizeName = (name: string) => name.trim().toLowerCase().replace(/[\s_-]/g, '')
 const stripWindowSuffix = (name: string) => name.replace(/window$/i, '')
@@ -94,6 +111,14 @@ const resolveWindowComponent = (name: string) => {
 }
 
 const canUseStorage = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+const sanitizePersistedProps = (props: Record<string, unknown>) => {
+  const clean: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(props)) {
+    if (NON_PERSISTED_WINDOW_PROP_KEYS.has(key)) continue
+    clean[key] = value
+  }
+  return clean
+}
 
 const loadPersistedWindows = () => {
   if (!canUseStorage()) return
@@ -109,7 +134,7 @@ const loadPersistedWindows = () => {
       if (typeof maybeRecord.name === 'string' && maybeRecord.name && maybeRecord.state) {
         persistedWindows.set(id, {
           name: normalizeName(maybeRecord.name),
-          props: (maybeRecord.props ?? {}) as Record<string, unknown>,
+          props: sanitizePersistedProps((maybeRecord.props ?? {}) as Record<string, unknown>),
           state: {
             ...DEFAULT_WINDOW_STATE,
             ...maybeRecord.state,
@@ -163,16 +188,15 @@ const openWindow = (name: string, options: WdOpenWindowOptions) => {
   if (!id) {
     throw new Error('Window id must be a non-empty string')
   }
-  if (windowsRef.value.some(window => window.id === id)) {
-    throw new Error(`Window id "${id}" already exists`)
+  const existingWindow = windowsRef.value.find(window => window.id === id)
+  if (existingWindow) {
+    focusWindow(id)
+    return existingWindow
   }
 
   const restoredWindow = persistedWindows.get(id)
   const restoredState = restoredWindow?.state
-  const baseProps: Record<string, unknown> = {
-    ...(restoredWindow?.props ?? {}),
-    ...(options.props ?? {}),
-  }
+  const openProps = sanitizePersistedProps(options.props ?? restoredWindow?.props ?? {})
   const initialState: WdManagedWindowState = {
     ...DEFAULT_WINDOW_STATE,
     ...restoredState,
@@ -180,7 +204,7 @@ const openWindow = (name: string, options: WdOpenWindowOptions) => {
   }
 
   const initialProps: Record<string, unknown> = {
-    ...baseProps,
+    ...openProps,
     x: initialState.x,
     y: initialState.y,
     width: initialState.width,
@@ -201,7 +225,7 @@ const openWindow = (name: string, options: WdOpenWindowOptions) => {
 
   persistedWindows.set(id, {
     name: key,
-    props: baseProps,
+    props: openProps,
     state: {
       ...initialState,
       isFocused: false,
@@ -264,17 +288,6 @@ const updateWindowProps = (id: string, props: Record<string, unknown>) => {
   if (!window) return
 
   window.wdProps = { ...props }
-  const previous = persistedWindows.get(id)
-  if (previous) {
-    persistedWindows.set(id, {
-      ...previous,
-      props: {
-        ...previous.props,
-        ...window.wdProps,
-      },
-    })
-    schedulePersistedStatesWrite()
-  }
 }
 
 const openPersistedWindows = () => {

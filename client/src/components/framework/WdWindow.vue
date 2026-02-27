@@ -40,8 +40,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { wdDesktopContextKey, type WdDesktopContext } from './WdDesktopContext'
+import { useTopMenu, type WdTopMenuItem } from '@/composables/useTopMenu'
 
 type ResizeDirection = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 type SnapSide = 'left' | 'right' | 'maximized' | null
@@ -71,7 +72,9 @@ const props = withDefaults(
     zIndex?: number
     maximized?: boolean
     restoreBounds?: WindowBounds | null
-    icon?: string;
+    icon?: string
+    windowId?: string
+    menuItems?: readonly WdTopMenuItem[]
   }>(),
   {
     title: 'Window',
@@ -84,7 +87,9 @@ const props = withDefaults(
     zIndex: 1,
     maximized: false,
     restoreBounds: null,
-    icon: undefined
+    icon: undefined,
+    windowId: undefined,
+    menuItems: undefined,
   },
 )
 const emit = defineEmits<{
@@ -105,7 +110,8 @@ const emit = defineEmits<{
 }>()
 
 const desktop = inject<WdDesktopContext | null>(wdDesktopContextKey, null)
-const windowId = getNextWindowId()
+const topMenu = useTopMenu()
+const runtimeWindowId = getNextWindowId()
 
 const posX = ref(props.x)
 const posY = ref(props.y)
@@ -115,8 +121,9 @@ const activeZIndex = ref(props.zIndex)
 const snappedSide = ref<SnapSide>(props.maximized ? 'maximized' : null)
 const restoreBounds = ref<WindowBounds | null>(props.restoreBounds ?? null)
 const isInteracting = ref(false)
-const isFocused = computed(() => desktop?.activeWindowId.value === windowId)
+const isFocused = computed(() => desktop?.activeWindowId.value === runtimeWindowId)
 const isMaximized = computed(() => snappedSide.value === 'maximized')
+const registeredMenuWindowId = ref<string | null>(null)
 
 const windowClasses = computed(() => [
   'wd-window',
@@ -178,7 +185,7 @@ const getDesktopRect = (): DesktopRect | null => {
 const bringToFront = () => {
   if (!desktop) return
   if (typeof desktop.requestFocus === 'function') {
-    activeZIndex.value = desktop.requestFocus(windowId)
+    activeZIndex.value = desktop.requestFocus(runtimeWindowId)
     return
   }
 
@@ -471,6 +478,39 @@ onMounted(() => {
     }
   }
   bringToFront()
+})
+
+const syncMenuRegistration = () => {
+  const nextWindowId = props.windowId?.trim() ?? ''
+  const prevWindowId = registeredMenuWindowId.value
+
+  if (prevWindowId && prevWindowId !== nextWindowId) {
+    topMenu.clearWindowMenuItems(prevWindowId)
+  }
+
+  if (!nextWindowId) {
+    registeredMenuWindowId.value = null
+    return
+  }
+
+  if (props.menuItems && props.menuItems.length > 0) {
+    topMenu.setWindowMenuItems(nextWindowId, props.menuItems)
+    registeredMenuWindowId.value = nextWindowId
+    return
+  }
+
+  topMenu.clearWindowMenuItems(nextWindowId)
+  registeredMenuWindowId.value = nextWindowId
+}
+
+watch(() => props.windowId, syncMenuRegistration, { immediate: true })
+watch(() => props.menuItems, syncMenuRegistration, { deep: true })
+
+onBeforeUnmount(() => {
+  const activeMenuWindowId = registeredMenuWindowId.value ?? props.windowId?.trim()
+  if (activeMenuWindowId) {
+    topMenu.clearWindowMenuItems(activeMenuWindowId)
+  }
 })
 
 watch(

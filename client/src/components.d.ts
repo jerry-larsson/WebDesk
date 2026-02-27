@@ -13,9 +13,12 @@ declare module 'vue' {
   export interface GlobalComponents {
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     HelloWorldWindow: typeof import('./components/windows/HelloWorldWindow.vue')['default']
+    ProjectsWindow: typeof import('./components/windows/ProjectsWindow.vue')['default']
     WdDesktop: typeof import('./components/framework/WdDesktop.vue')['default']
     WdTaskbar: typeof import('./components/framework/WdTaskbar.vue')['default']
     WdTopMenu: typeof import('./components/framework/WdTopMenu.vue')['default']
+    WdTopMenuDropdown: typeof import('./components/framework/WdTopMenuDropdown.vue')['default']
+    WdTopMenuItems: typeof import('./components/framework/WdTopMenuItems.vue')['default']
     WdWindow: typeof import('./components/framework/WdWindow.vue')['default']
   }
 }

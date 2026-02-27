@@ -9,7 +9,7 @@
     >
       <component
         :is="window.component"
-        v-bind="window.props"
+        v-bind="{ ...window.props, windowId: window.id }"
         @close="windowManager.closeWindow(window.id)"
         @props-change="handleWindowPropsChange(window.id, $event)"
         @state-change="handleWindowStateChange(window.id, $event)"
