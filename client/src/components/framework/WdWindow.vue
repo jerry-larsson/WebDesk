@@ -2,11 +2,12 @@
   <v-sheet :class="windowClasses" :color="windowColor" :elevation="windowElevation" :style="windowStyle" tag="article"
     @pointerdown="bringToFront">
     <header :class="titlebarClasses" @pointerdown="startDrag">
-      <div class="wd-window__titlebar-start">
+      <div v-if="$slots['titlebar-start'] || !!icon" class="wd-window__titlebar-start">
         <slot name="titlebar-start" />
+        <v-icon v-if="icon" :icon="icon" size="18" />
       </div>
 
-      <div :class="titleClasses">
+      <div :class="titleClasses" class="flex-fill">
         <slot name="title">{{ title }}</slot>
       </div>
 
@@ -16,7 +17,8 @@
             <v-btn density="comfortable" icon="mdi-minus" size="small" @click.stop="onMinimizeClick" />
             <v-btn density="comfortable" :icon="isMaximized ? 'mdi-window-restore' : 'mdi-window-maximize'" size="small"
               @click.stop="onMaximizeClick" />
-            <v-btn class="wd-window__close-btn" density="comfortable" icon="mdi-close" size="small" @click.stop="onCloseClick" />
+            <v-btn class="wd-window__close-btn" density="comfortable" icon="mdi-close" size="small"
+              @click.stop="onCloseClick" />
           </v-btn-group>
         </slot>
       </div>
@@ -38,13 +40,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import { wdDesktopContextKey, type WdDesktopContext } from './WdDesktopContext'
 
 type ResizeDirection = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 type SnapSide = 'left' | 'right' | 'maximized' | null
-type DesktopRect = Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>
-let nextWindowId = 1
+type DesktopRect = Pick<DOMRect, 'left' | 'top' | 'width' | 'height'> & {
+  offsetX: number
+  offsetY: number
+}
+type WindowBounds = { x: number, y: number, width: number, height: number }
+const WINDOW_ID_COUNTER_KEY = '__wdWindowIdCounter__'
+
+const getNextWindowId = () => {
+  const globalState = globalThis as typeof globalThis & Record<string, number | undefined>
+  const nextWindowId = globalState[WINDOW_ID_COUNTER_KEY] ?? 1
+  globalState[WINDOW_ID_COUNTER_KEY] = nextWindowId + 1
+  return nextWindowId
+}
 
 const props = withDefaults(
   defineProps<{
@@ -56,6 +69,9 @@ const props = withDefaults(
     minWidth?: number
     minHeight?: number
     zIndex?: number
+    maximized?: boolean
+    restoreBounds?: WindowBounds | null
+    icon?: string;
   }>(),
   {
     title: 'Window',
@@ -66,26 +82,40 @@ const props = withDefaults(
     minWidth: 260,
     minHeight: 180,
     zIndex: 1,
+    maximized: false,
+    restoreBounds: null,
+    icon: undefined
   },
 )
 const emit = defineEmits<{
   close: []
   minimize: []
   maximizeToggle: [maximized: boolean]
+  propsChange: [props: Record<string, unknown>]
+  stateChange: [state: {
+    x: number
+    y: number
+    width: number
+    height: number
+    zIndex: number
+    isFocused: boolean
+    isMaximized: boolean
+    restoreBounds: WindowBounds | null
+  }]
 }>()
 
 const desktop = inject<WdDesktopContext | null>(wdDesktopContextKey, null)
-const windowId = nextWindowId++
+const windowId = getNextWindowId()
 
 const posX = ref(props.x)
 const posY = ref(props.y)
 const winWidth = ref(props.width)
 const winHeight = ref(props.height)
 const activeZIndex = ref(props.zIndex)
-const snappedSide = ref<SnapSide>(null)
-const restoreBounds = ref<{ x: number, y: number, width: number, height: number } | null>(null)
+const snappedSide = ref<SnapSide>(props.maximized ? 'maximized' : null)
+const restoreBounds = ref<WindowBounds | null>(props.restoreBounds ?? null)
 const isInteracting = ref(false)
-const isFocused = computed(() => !desktop || desktop.activeWindowId.value === windowId)
+const isFocused = computed(() => desktop?.activeWindowId.value === windowId)
 const isMaximized = computed(() => snappedSide.value === 'maximized')
 
 const windowClasses = computed(() => [
@@ -128,10 +158,21 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 const SNAP_THRESHOLD_PX = 16
 
 const getDesktopRect = (): DesktopRect | null => {
-  const workAreaEl = desktop?.workAreaRef?.value ?? desktop?.desktopRef.value
+  const desktopEl = desktop?.desktopRef.value
+  const workAreaEl = desktop?.workAreaRef?.value ?? desktopEl
   if (!workAreaEl) return null
 
-  return workAreaEl.getBoundingClientRect()
+  const workAreaRect = workAreaEl.getBoundingClientRect()
+  const desktopRect = desktopEl?.getBoundingClientRect() ?? workAreaRect
+
+  return {
+    left: workAreaRect.left,
+    top: workAreaRect.top,
+    width: workAreaRect.width,
+    height: workAreaRect.height,
+    offsetX: workAreaRect.left - desktopRect.left,
+    offsetY: workAreaRect.top - desktopRect.top,
+  }
 }
 
 const bringToFront = () => {
@@ -190,8 +231,8 @@ const onMaximizeClick = () => {
   }
 
   snappedSide.value = 'maximized'
-  posX.value = 0
-  posY.value = 0
+  posX.value = desktopRect.offsetX
+  posY.value = desktopRect.offsetY
   winWidth.value = desktopRect.width
   winHeight.value = desktopRect.height
   emit('maximizeToggle', true)
@@ -255,10 +296,10 @@ const startDrag = (event: PointerEvent) => {
           Math.max(0, desktopRect.height - restoredHeight),
         )
 
-        posX.value = restoredX
-        posY.value = restoredY
-        dragStartX = restoredX
-        dragStartY = restoredY
+        posX.value = desktopRect.offsetX + restoredX
+        posY.value = desktopRect.offsetY + restoredY
+        dragStartX = posX.value
+        dragStartY = posY.value
         dragStartMouseX = moveEvent.clientX
         dragStartMouseY = moveEvent.clientY
       }
@@ -266,11 +307,13 @@ const startDrag = (event: PointerEvent) => {
 
     const nextX = dragStartX + (moveEvent.clientX - dragStartMouseX)
     const nextY = dragStartY + (moveEvent.clientY - dragStartMouseY)
-    const maxX = desktopRect ? desktopRect.width - winWidth.value : Number.POSITIVE_INFINITY
-    const maxY = desktopRect ? desktopRect.height - winHeight.value : Number.POSITIVE_INFINITY
+    const minX = desktopRect ? desktopRect.offsetX : Number.NEGATIVE_INFINITY
+    const minY = desktopRect ? desktopRect.offsetY : Number.NEGATIVE_INFINITY
+    const maxX = desktopRect ? desktopRect.offsetX + desktopRect.width - winWidth.value : Number.POSITIVE_INFINITY
+    const maxY = desktopRect ? desktopRect.offsetY + desktopRect.height - winHeight.value : Number.POSITIVE_INFINITY
 
-    posX.value = desktopRect ? clamp(nextX, 0, Math.max(0, maxX)) : nextX
-    posY.value = desktopRect ? clamp(nextY, 0, Math.max(0, maxY)) : nextY
+    posX.value = desktopRect ? clamp(nextX, minX, Math.max(minX, maxX)) : nextX
+    posY.value = desktopRect ? clamp(nextY, minY, Math.max(minY, maxY)) : nextY
   }
 
   const onUp = (upEvent: PointerEvent) => {
@@ -295,8 +338,8 @@ const startDrag = (event: PointerEvent) => {
 
         pendingSnap = {
           side: isAtTopEdge ? 'maximized' : isAtLeftEdge ? 'left' : 'right',
-          x: isAtTopEdge ? 0 : isAtLeftEdge ? 0 : desktopRect.width / 2,
-          y: 0,
+          x: isAtTopEdge ? desktopRect.offsetX : isAtLeftEdge ? desktopRect.offsetX : desktopRect.offsetX + (desktopRect.width / 2),
+          y: desktopRect.offsetY,
           width: isAtTopEdge ? desktopRect.width : desktopRect.width / 2,
           height: desktopRect.height,
         }
@@ -374,20 +417,25 @@ const startResize = (event: PointerEvent, direction: ResizeDirection) => {
     }
 
     if (desktopRect) {
-      if (nextX < 0) {
-        nextWidth += nextX
-        nextX = 0
+      const minX = desktopRect.offsetX
+      const minY = desktopRect.offsetY
+      const maxRight = desktopRect.offsetX + desktopRect.width
+      const maxBottom = desktopRect.offsetY + desktopRect.height
+
+      if (nextX < minX) {
+        nextWidth += nextX - minX
+        nextX = minX
       }
-      if (nextY < 0) {
-        nextHeight += nextY
-        nextY = 0
+      if (nextY < minY) {
+        nextHeight += nextY - minY
+        nextY = minY
       }
 
-      if (nextX + nextWidth > desktopRect.width) {
-        nextWidth = desktopRect.width - nextX
+      if (nextX + nextWidth > maxRight) {
+        nextWidth = maxRight - nextX
       }
-      if (nextY + nextHeight > desktopRect.height) {
-        nextHeight = desktopRect.height - nextY
+      if (nextY + nextHeight > maxBottom) {
+        nextHeight = maxBottom - nextY
       }
 
       nextWidth = Math.max(props.minWidth, nextWidth)
@@ -413,8 +461,42 @@ const startResize = (event: PointerEvent, direction: ResizeDirection) => {
 }
 
 onMounted(() => {
+  if (props.maximized) {
+    const desktopRect = getDesktopRect()
+    if (desktopRect) {
+      posX.value = desktopRect.offsetX
+      posY.value = desktopRect.offsetY
+      winWidth.value = desktopRect.width
+      winHeight.value = desktopRect.height
+    }
+  }
   bringToFront()
 })
+
+watch(
+  () => ({ ...props }),
+  nextProps => {
+    emit('propsChange', nextProps)
+  },
+  { immediate: true },
+)
+
+watch(
+  [posX, posY, winWidth, winHeight, activeZIndex, isFocused, isMaximized, restoreBounds],
+  () => {
+    emit('stateChange', {
+      x: posX.value,
+      y: posY.value,
+      width: winWidth.value,
+      height: winHeight.value,
+      zIndex: activeZIndex.value,
+      isFocused: isFocused.value,
+      isMaximized: isMaximized.value,
+      restoreBounds: restoreBounds.value ? { ...restoreBounds.value } : null,
+    })
+  },
+  { immediate: true },
+)
 
 </script>
 
@@ -442,7 +524,7 @@ onMounted(() => {
 }
 
 .wd-window--focused {
-  border-color: rgba(var(--v-theme-on-surface), 0.22);
+  border-color: rgb(var(--v-theme-primary));
 }
 
 .wd-window--unfocused {
@@ -456,8 +538,7 @@ onMounted(() => {
 
 .wd-window__titlebar {
   height: 42px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 12px;

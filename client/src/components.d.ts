@@ -15,6 +15,7 @@ declare module 'vue' {
     HelloWorldWindow: typeof import('./components/windows/HelloWorldWindow.vue')['default']
     WdDesktop: typeof import('./components/framework/WdDesktop.vue')['default']
     WdTaskbar: typeof import('./components/framework/WdTaskbar.vue')['default']
+    WdTopMenu: typeof import('./components/framework/WdTopMenu.vue')['default']
     WdWindow: typeof import('./components/framework/WdWindow.vue')['default']
   }
 }

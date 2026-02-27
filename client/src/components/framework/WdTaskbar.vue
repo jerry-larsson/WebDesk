@@ -7,15 +7,15 @@
     rounded="0"
     :style="taskbarStyle"
   >
-    <div class="wd-taskbar__section wd-taskbar__section--start d-flex align-center ga-2">
+    <div class="wd-taskbar__section wd-taskbar__section--start d-flex align-center ga-1">
       <slot name="start" />
     </div>
 
-    <div class="wd-taskbar__section wd-taskbar__section--center d-flex align-center justify-center ga-2">
+    <div class="wd-taskbar__section wd-taskbar__section--center d-flex align-center justify-center ga-1">
       <slot />
     </div>
 
-    <div class="wd-taskbar__section wd-taskbar__section--end d-flex align-center justify-end ga-2">
+    <div class="wd-taskbar__section wd-taskbar__section--end d-flex align-center justify-end ga-1">
       <slot name="end" />
     </div>
   </v-sheet>
