@@ -1,6 +1,9 @@
 <template>
   <div ref="desktopRef" class="wd-desktop" :style="desktopStyle" @pointerdown="handlePointerDown">
     <div ref="workAreaRef" class="wd-desktop__workarea" aria-hidden="true" />
+    <div class="wd-desktop__icons">
+      <slot name="icons" />
+    </div>
     <div
       v-for="window in managedWindows"
       :key="window.id"
@@ -139,5 +142,25 @@ provide<WdDesktopContext>(wdDesktopContextKey, {
   top: var(--wd-top-menu-space, 0px);
   bottom: var(--wd-taskbar-space, 0px);
   pointer-events: none;
+}
+
+.wd-desktop__icons {
+  position: absolute;
+  inset: 0;
+  top: var(--wd-top-menu-space, 0px);
+  bottom: var(--wd-taskbar-space, 0px);
+  z-index: 1;
+  pointer-events: none;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 10px 10px;
+  align-content: start;
+  justify-content: flex-start;
+}
+
+.wd-desktop__icons :deep(*) {
+  pointer-events: auto;
 }
 </style>

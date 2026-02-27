@@ -2,6 +2,13 @@
   <v-app class="webdesk-app">
     <v-main class="webdesk-main">
       <wd-desktop :background="desktopBackground">
+        <template #icons>
+          <wd-desktop-icon label="Hello World" icon="mdi-file-document-outline"
+            @open="windowManager.openWindow('HelloWorldWindow', { id: 'hello-world-' + windowManager.windows.value.length + 1, props: { testParameter: uuidNoDash() } })" />
+          <wd-desktop-icon label="Projects" icon="mdi-folder-outline"
+            @open="windowManager.openWindow('projects-window', { id: 'projects-window' })" />
+        </template>
+
         <wd-top-menu>
           <template #start>
             <v-menu location="bottom start">
@@ -46,6 +53,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import vintageBackground from '@/assets/backgrounds/vintage.png'
+import WdDesktopIcon from '@/components/framework/WdDesktopIcon.vue'
 import { useTopMenu } from '@/composables/useTopMenu'
 import type { WdTopMenuItem } from '@/composables/useTopMenu'
 import { useWindowManager } from '@/composables/useWindowManager'
@@ -76,7 +84,7 @@ const mainMenuItems = ref<WdTopMenuItem[]>([
       windowManager.openWindow('HelloWorldWindow', { id: 'hello-world-' + windowManager.windows.value.length + 1, props: { testParameter: uuidNoDash() } })
     }
   },
-    {
+  {
     id: 'project', label: 'Projekt',
     children: [],
     onClick: () => {
