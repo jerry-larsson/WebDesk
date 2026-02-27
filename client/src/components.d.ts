@@ -11,7 +11,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     HelloWorldWindow: typeof import('./components/windows/HelloWorldWindow.vue')['default']
     ProjectsWindow: typeof import('./components/windows/ProjectsWindow.vue')['default']
     WdDesktop: typeof import('./components/framework/WdDesktop.vue')['default']

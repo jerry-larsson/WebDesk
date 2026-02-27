@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "env.d.ts",
+    "src/lib.ts",
+    "src/components/framework/**/*.vue",
+    "src/composables/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/__tests__/*",
+    "src/main.ts",
+    "src/App.vue",
+    "src/components/windows/**/*.vue"
+  ],
+  "compilerOptions": {
+    "composite": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "outDir": "dist/library",
+    "noEmit": false
+  }
+}
