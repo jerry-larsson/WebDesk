@@ -3,7 +3,13 @@
     <template v-for="item in visibleItems" :key="item.id">
       <v-divider v-if="item.type === 'divider'" class="my-1" />
 
-      <v-menu v-else-if="item.children?.length" location="end top" open-on-hover>
+      <v-menu
+        v-else-if="item.children?.length"
+        location="end top"
+        :open-on-hover="!isTouchInput"
+        open-on-click
+        :close-on-content-click="false"
+      >
         <template #activator="{ props: activatorProps }">
           <v-list-item v-bind="activatorProps" :disabled="item.disabled" :title="item.label" class="text-body-medium">
             <template #append>
@@ -34,6 +40,10 @@ const props = defineProps<{
 }>()
 
 const visibleItems = computed(() => props.items.filter(item => item.visible !== false))
+const isTouchInput = computed(() => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+  return window.matchMedia('(hover: none), (pointer: coarse)').matches
+})
 
 const onItemClick = (item: WdTopMenuItem) => {
   if (item.disabled) return

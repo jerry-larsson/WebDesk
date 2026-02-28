@@ -6,17 +6,30 @@
         <v-icon :icon="focusedWindowIcon" size="18" />
       </div>
       <slot name="start" />
+      <v-menu v-if="showCollapsedFocusedMenuItems" location="bottom start">
+        <template #activator="{ props: activatorProps }">
+          <v-btn v-bind="activatorProps" class="px-2" density="comfortable" rounded="0" variant="text"
+            icon="mdi-menu" />
+        </template>
+
+        <wd-top-menu-dropdown :items="focusedMenuItems" />
+      </v-menu>
+      <wd-top-menu-items v-else :items="focusedMenuItems" />
     </div>
 
     <div class="wd-top-menu__section wd-top-menu__section--center d-flex align-center justify-center ga-2">
+      <span class="text-caption w-100">{{ focusedWindowTitle }}</span>
       <slot />
     </div>
 
     <div class="wd-top-menu__section wd-top-menu__section--end d-flex align-center justify-end ga-2">
       <div v-if="showFullscreenWindowChrome" class="wd-top-menu__window-actions d-flex align-center">
         <v-btn icon="mdi-minus" size="small" variant="text" rounded @click.stop="onMinimizeFocusedWindow" />
-        <v-btn class="wd-top-menu__close-btn" icon="mdi-close" size="small" variant="text" rounded @click.stop="onCloseFocusedWindow" />
+        <v-btn class="wd-top-menu__close-btn" icon="mdi-close" size="small" variant="text" rounded
+          @click.stop="onCloseFocusedWindow" />
       </div>
+
+      <v-btn @click="windowManager.toggleFullscreenMode()" icon="mdi-fullscreen" rounded variant="text"></v-btn>
       <slot name="end" />
     </div>
   </v-sheet>
@@ -25,6 +38,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWindowManager } from '@/composables/useWindowManager'
+import { useTopMenu } from '@/composables/useTopMenu'
+import { useDisplay } from 'vuetify'
 
 const props = withDefaults(
   defineProps<{
@@ -39,11 +54,20 @@ const topMenuStyle = computed(() => ({
   height: `${props.height}px`,
 }))
 const windowManager = useWindowManager()
+const topMenu = useTopMenu()
+const display = useDisplay()
 const focusedWindow = computed(() => windowManager.focusedWindow.value)
+const focusedMenuItems = computed(() => topMenu.focusedMenuItems.value)
+const showCollapsedFocusedMenuItems = computed(() => display.mdAndDown.value && focusedMenuItems.value.length > 0)
 const showFullscreenWindowChrome = computed(() => Boolean(focusedWindow.value?.wdProps?.mobileFullscreen))
 const focusedWindowIcon = computed(() => {
   const icon = focusedWindow.value?.wdProps?.icon
   return typeof icon === 'string' && icon ? icon : 'mdi-application-outline'
+})
+
+const focusedWindowTitle = computed(() => {
+  const rawTitle = windowManager.focusedWindow.value?.wdProps?.title
+  return typeof rawTitle === 'string' && rawTitle.trim() ? rawTitle : 'Desktop'
 })
 
 const topMenuRef = ref<HTMLElement | { $el?: Element | null } | null>(null)

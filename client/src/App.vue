@@ -23,15 +23,6 @@
 
               <wd-top-menu-dropdown :items="mainMenuItems" />
             </v-menu>
-
-            <wd-top-menu-items :items="focusedMenuItems" />
-          </template>
-
-          <span class="text-caption">{{ focusedWindowTitle }}</span>
-
-          <template #end>
-            <v-btn @click="windowManager.toggleFullscreenMode()" icon="mdi-fullscreen" rounded variant="text"></v-btn>
-            <span class="text-caption">{{ currentTime }}</span>
           </template>
         </wd-top-menu>
 
@@ -45,7 +36,6 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import vintageBackground from '@/assets/backgrounds/vintage.png'
 import WdDesktopIcon from '@/components/framework/WdDesktopIcon.vue'
-import { useTopMenu } from '@/composables/useTopMenu'
 import type { WdTopMenuItem } from '@/composables/useTopMenu'
 import { useWindowManager, type WdManagedWindow } from '@/composables/useWindowManager'
 import { uuidNoDash } from './utils/uuitHelper'
@@ -53,19 +43,12 @@ import { format } from 'date-fns';
 
 const desktopBackground = `url(${vintageBackground}) center / cover no-repeat`
 const windowManager = useWindowManager()
-const topMenu = useTopMenu()
 const now = ref(new Date())
 const currentTime = computed(() => format(now.value, 'HH:mm'))
-const focusedMenuItems = computed(() => topMenu.focusedMenuItems.value)
 
 const clockInterval = setInterval(() => {
   now.value = new Date()
 }, 1000)
-
-const focusedWindowTitle = computed(() => {
-  const rawTitle = windowManager.focusedWindow.value?.wdProps?.title
-  return typeof rawTitle === 'string' && rawTitle.trim() ? rawTitle : 'Desktop'
-})
 
 const mainMenuItems = computed<WdTopMenuItem[]>(() => [
   {

@@ -495,16 +495,28 @@ const windows = computed(() => windowsRef.value)
 const focusedWindow = computed(() => windowsRef.value.find(window => window.state.isFocused) ?? null)
 
 const setFullscreenMode = (enabled: boolean) => {
+  const wasEnabled = fullscreenModeRef.value
   fullscreenModeRef.value = enabled
   persistFullscreenMode()
+  if (!wasEnabled && enabled) {
+    requestAnimationFrame(() => {
+      focusTopVisibleWindow()
+    })
+  }
   return fullscreenModeRef.value
 }
 
 const toggleFullscreenMode = (nextValue?: boolean) => {
+  const wasEnabled = fullscreenModeRef.value
   fullscreenModeRef.value = typeof nextValue === 'boolean'
     ? nextValue
     : !fullscreenModeRef.value
   persistFullscreenMode()
+  if (!wasEnabled && fullscreenModeRef.value) {
+    requestAnimationFrame(() => {
+      focusTopVisibleWindow()
+    })
+  }
   return fullscreenModeRef.value
 }
 
