@@ -1,5 +1,5 @@
 <template>
-  <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center px-3 overflow-hidden" color="surface" elevation="0"
+  <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center pl-1 pr-0 overflow-hidden" color="surface" elevation="0"
     rounded="0" :style="topMenuStyle">
     <div class="wd-top-menu__section wd-top-menu__section--start d-flex align-center ga-2">
       <div v-if="showFullscreenWindowChrome" class="wd-top-menu__window-info d-flex align-center">
@@ -18,7 +18,7 @@
     </div>
 
     <div class="wd-top-menu__section wd-top-menu__section--center d-flex align-center justify-center ga-2">
-      <span class="text-caption w-100">{{ focusedWindowTitle }}</span>
+      <span class="text-caption text-center w-100">{{ focusedWindowTitle }}</span>
       <slot />
     </div>
 
