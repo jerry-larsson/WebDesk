@@ -22,8 +22,8 @@
         <div class="wd-window__titlebar-end" @pointerdown.stop>
           <slot name="titlebar-end">
             <v-btn-group class="wd-window__titlebar-actions" variant="text">
-              <v-btn density="comfortable" icon="mdi-minus" size="small" @click.stop="onMinimizeClick" />
-              <v-btn density="comfortable" :icon="isMaximized ? 'mdi-window-restore' : 'mdi-window-maximize'" size="small"
+            <v-btn density="comfortable" icon="mdi-minus" size="small" @click.stop="onMinimizeClick" />
+              <v-btn v-if="!isMobileFullscreen" density="comfortable" :icon="isMaximized ? 'mdi-window-restore' : 'mdi-window-maximize'" size="small"
                 @click.stop="onMaximizeClick" />
               <v-btn class="wd-window__close-btn" density="comfortable" icon="mdi-close" size="small"
                 @click.stop="onCloseClick" />
@@ -42,7 +42,7 @@
 
       <v-overlay :model-value="!isFocused" attach persistent class="wd-window__dim-overlay"></v-overlay>
 
-      <span v-for="handle in resizeHandles" :key="handle" class="wd-window__resize-handle" :class="`is-${handle}`"
+      <span v-if="!isMobileFullscreen" v-for="handle in resizeHandles" :key="handle" class="wd-window__resize-handle" :class="`is-${handle}`"
         @pointerdown="(event) => startResize(event, handle)" />
     </v-sheet>
   </transition>
@@ -85,6 +85,7 @@ const props = withDefaults(
     windowId?: string
     menuItems?: readonly WdTopMenuItem[]
     minimized?: boolean
+    mobileFullscreen?: boolean
   }>(),
   {
     title: 'Window',
@@ -101,6 +102,7 @@ const props = withDefaults(
     windowId: undefined,
     menuItems: undefined,
     minimized: false,
+    mobileFullscreen: false,
   },
 )
 const emit = defineEmits<{
@@ -135,14 +137,24 @@ const restoreBounds = ref<WindowBounds | null>(props.restoreBounds ?? null)
 const isInteracting = ref(false)
 const isFocused = computed(() => desktop?.activeWindowId.value === runtimeWindowId)
 const isMinimized = computed(() => !!props.minimized)
+const isMobileFullscreen = computed(() => !!props.mobileFullscreen)
 const isMaximized = computed(() => snappedSide.value === 'maximized')
 const registeredMenuWindowId = ref<string | null>(null)
+const viewportWidth = ref(window.innerWidth)
+const viewportHeight = ref(window.innerHeight)
+const layoutVersion = ref(0)
+let layoutObserver: ResizeObserver | null = null
+const onViewportResize = () => {
+  viewportWidth.value = window.innerWidth
+  viewportHeight.value = window.innerHeight
+}
 
 const windowClasses = computed(() => [
   'wd-window',
   'rounded-lg',
   !isInteracting.value && 'wd-window--animated',
   isMaximized.value && 'wd-window--maximized',
+  isMobileFullscreen.value && 'wd-window--mobile',
   isFocused.value ? 'wd-window--focused' : 'wd-window--unfocused',
 ])
 const windowColor = computed(() => 'surface')
@@ -207,13 +219,32 @@ const bringToFront = () => {
   }
 }
 
-const windowStyle = computed(() => ({
-  left: `${posX.value}px`,
-  top: `${posY.value}px`,
-  width: `${winWidth.value}px`,
-  height: `${winHeight.value}px`,
-  zIndex: activeZIndex.value,
-}))
+const windowStyle = computed(() => {
+  layoutVersion.value
+
+  if (isMobileFullscreen.value) {
+    const rect = getDesktopRect()
+    const left = rect?.offsetX ?? 0
+    const top = rect?.offsetY ?? 0
+    const width = rect?.width ?? viewportWidth.value
+    const height = rect?.height ?? viewportHeight.value
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${height}px`,
+      zIndex: activeZIndex.value,
+    }
+  }
+
+  return {
+    left: `${posX.value}px`,
+    top: `${posY.value}px`,
+    width: `${winWidth.value}px`,
+    height: `${winHeight.value}px`,
+    zIndex: activeZIndex.value,
+  }
+})
 
 const onCloseClick = () => {
   emit('close')
@@ -227,6 +258,7 @@ const onMinimizeClick = () => {
 }
 
 const onMaximizeClick = () => {
+  if (isMobileFullscreen.value) return
   const desktopRect = getDesktopRect()
   if (!desktopRect) return
 
@@ -262,6 +294,7 @@ const onMaximizeClick = () => {
 }
 
 const startDrag = (event: PointerEvent) => {
+  if (isMobileFullscreen.value) return
   if (event.pointerType === 'mouse' && event.button !== 0) return
 
   const target = event.target as HTMLElement
@@ -397,6 +430,7 @@ const startDrag = (event: PointerEvent) => {
 }
 
 const startResize = (event: PointerEvent, direction: ResizeDirection) => {
+  if (isMobileFullscreen.value) return
   if (event.pointerType === 'mouse' && event.button !== 0) return
 
   event.preventDefault()
@@ -484,6 +518,17 @@ const startResize = (event: PointerEvent, direction: ResizeDirection) => {
 }
 
 onMounted(() => {
+  window.addEventListener('resize', onViewportResize)
+  const workAreaEl = desktop?.workAreaRef?.value
+  const desktopEl = desktop?.desktopRef.value
+  if (typeof ResizeObserver !== 'undefined') {
+    layoutObserver = new ResizeObserver(() => {
+      layoutVersion.value += 1
+    })
+    if (workAreaEl) layoutObserver.observe(workAreaEl)
+    if (desktopEl && desktopEl !== workAreaEl) layoutObserver.observe(desktopEl)
+  }
+
   if (props.maximized) {
     const desktopRect = getDesktopRect()
     if (desktopRect) {
@@ -525,6 +570,9 @@ watch(() => props.windowId, syncMenuRegistration, { immediate: true })
 watch(() => props.menuItems, syncMenuRegistration, { deep: true })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', onViewportResize)
+  layoutObserver?.disconnect()
+  layoutObserver = null
   const activeMenuWindowId = registeredMenuWindowId.value ?? props.windowId?.trim()
   if (activeMenuWindowId) {
     topMenu.clearWindowMenuItems(activeMenuWindowId)
@@ -595,6 +643,11 @@ watch(
   border-radius: 0 !important;
 }
 
+.wd-window--mobile {
+  border-radius: 0 !important;
+  border-color: transparent;
+}
+
 .wd-window__titlebar {
   height: 42px;
   display: flex;
@@ -605,6 +658,10 @@ watch(
   // border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.14);
   cursor: move;
   touch-action: none;
+}
+
+.wd-window--mobile .wd-window__titlebar {
+  cursor: default;
 }
 
 .wd-window__titlebar-start,
