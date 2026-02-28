@@ -12,7 +12,7 @@
     >
       <component
         :is="window.component"
-        v-bind="{ ...window.props, windowId: window.id, mobileFullscreen: isMobile }"
+        v-bind="{ ...window.props, windowId: window.id, mobileFullscreen: isFullscreenMode }"
         @close="windowManager.closeWindow(window.id)"
         @minimize="windowManager.minimizeWindow(window.id)"
         @props-change="handleWindowPropsChange(window.id, $event)"
@@ -46,6 +46,7 @@ const activeWindowId = ref<number | null>(null)
 const windowManager = useWindowManager()
 const display = useDisplay()
 const isMobile = computed(() => display.mdAndDown.value)
+const isFullscreenMode = computed(() => isMobile.value || windowManager.isFullscreenMode.value)
 
 const managedWindows = computed(() => {
   return windowManager.windows.value

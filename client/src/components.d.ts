@@ -12,11 +12,16 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     BlankWindow: typeof import('./components/windows/BlankWindow.vue')['default']
-    copy: typeof import('./components/windows/HelloWorldWindow copy.vue')['default']
+    CqCol: typeof import('./components/framework/grid/CqCol.vue')['default']
+    CqContainer: typeof import('./components/framework/grid/CqContainer.vue')['default']
+    CqRow: typeof import('./components/framework/grid/CqRow.vue')['default']
     HelloWorldWindow: typeof import('./components/windows/HelloWorldWindow.vue')['default']
     ProjectsWindow: typeof import('./components/windows/ProjectsWindow.vue')['default']
+    WdCol: typeof import('./components/framework/grid/WdCol.vue')['default']
+    WdContainer: typeof import('./components/framework/grid/WdContainer.vue')['default']
     WdDesktop: typeof import('./components/framework/WdDesktop.vue')['default']
     WdDesktopIcon: typeof import('./components/framework/WdDesktopIcon.vue')['default']
+    WdRow: typeof import('./components/framework/grid/WdRow.vue')['default']
     WdTaskbar: typeof import('./components/framework/WdTaskbar.vue')['default']
     WdTopMenu: typeof import('./components/framework/WdTopMenu.vue')['default']
     WdTopMenuDropdown: typeof import('./components/framework/WdTopMenuDropdown.vue')['default']

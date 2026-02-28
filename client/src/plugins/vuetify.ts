@@ -24,4 +24,9 @@ export default createVuetify({
       }
     }
   },
+  defaults: {
+    VBtn: {
+      // rounded: 'pill'
+    }
+  }
 })

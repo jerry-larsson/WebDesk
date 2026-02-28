@@ -2,6 +2,9 @@
   <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center px-3 overflow-hidden" color="surface" elevation="0"
     rounded="0" :style="topMenuStyle">
     <div class="wd-top-menu__section wd-top-menu__section--start d-flex align-center ga-2">
+      <div v-if="showFullscreenWindowChrome" class="wd-top-menu__window-info d-flex align-center">
+        <v-icon :icon="focusedWindowIcon" size="18" />
+      </div>
       <slot name="start" />
     </div>
 
@@ -10,6 +13,10 @@
     </div>
 
     <div class="wd-top-menu__section wd-top-menu__section--end d-flex align-center justify-end ga-2">
+      <div v-if="showFullscreenWindowChrome" class="wd-top-menu__window-actions d-flex align-center">
+        <v-btn icon="mdi-minus" size="small" variant="text" rounded @click.stop="onMinimizeFocusedWindow" />
+        <v-btn class="wd-top-menu__close-btn" icon="mdi-close" size="small" variant="text" rounded @click.stop="onCloseFocusedWindow" />
+      </div>
       <slot name="end" />
     </div>
   </v-sheet>
@@ -17,6 +24,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useWindowManager } from '@/composables/useWindowManager'
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +38,13 @@ const props = withDefaults(
 const topMenuStyle = computed(() => ({
   height: `${props.height}px`,
 }))
+const windowManager = useWindowManager()
+const focusedWindow = computed(() => windowManager.focusedWindow.value)
+const showFullscreenWindowChrome = computed(() => Boolean(focusedWindow.value?.wdProps?.mobileFullscreen))
+const focusedWindowIcon = computed(() => {
+  const icon = focusedWindow.value?.wdProps?.icon
+  return typeof icon === 'string' && icon ? icon : 'mdi-application-outline'
+})
 
 const topMenuRef = ref<HTMLElement | { $el?: Element | null } | null>(null)
 
@@ -66,6 +81,18 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearDesktopWorkAreaOffset()
 })
+
+const onMinimizeFocusedWindow = () => {
+  const id = focusedWindow.value?.id
+  if (!id) return
+  windowManager.minimizeWindow(id)
+}
+
+const onCloseFocusedWindow = () => {
+  const id = focusedWindow.value?.id
+  if (!id) return
+  windowManager.closeWindow(id)
+}
 </script>
 
 <style scoped>
@@ -94,5 +121,20 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.wd-top-menu__window-info {
+  min-width: 22px;
+}
+
+.wd-top-menu__window-actions {
+  margin-right: -8px;
+  gap: 2px;
+}
+
+.wd-top-menu__close-btn:hover,
+.wd-top-menu__close-btn:focus-visible {
+  background-color: #c42b1c !important;
+  color: #ffffff !important;
 }
 </style>

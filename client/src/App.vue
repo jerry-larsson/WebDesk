@@ -30,6 +30,7 @@
           <span class="text-caption">{{ focusedWindowTitle }}</span>
 
           <template #end>
+            <v-btn @click="windowManager.toggleFullscreenMode()" icon="mdi-fullscreen" rounded variant="text"></v-btn>
             <span class="text-caption">{{ currentTime }}</span>
           </template>
         </wd-top-menu>

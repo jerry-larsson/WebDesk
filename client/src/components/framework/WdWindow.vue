@@ -1,15 +1,8 @@
 <template>
   <transition name="wd-window-minimize">
-    <v-sheet
-      v-show="!isMinimized"
-      :class="windowClasses"
-      :color="windowColor"
-      :elevation="windowElevation"
-      :style="windowStyle"
-      tag="article"
-      @pointerdown="bringToFront"
-    >
-      <header :class="titlebarClasses" @pointerdown="startDrag">
+    <v-sheet v-show="!isMinimized" :class="windowClasses" :color="windowColor" :elevation="windowElevation"
+      :style="windowStyle" tag="article" @pointerdown="bringToFront">
+      <header v-if="!isMobileFullscreen" :class="titlebarClasses" @pointerdown="startDrag">
         <div v-if="$slots['titlebar-start'] || !!icon" class="wd-window__titlebar-start">
           <slot name="titlebar-start" />
           <v-icon v-if="icon" :icon="icon" size="18" />
@@ -22,8 +15,9 @@
         <div class="wd-window__titlebar-end" @pointerdown.stop>
           <slot name="titlebar-end">
             <v-btn-group class="wd-window__titlebar-actions" variant="text">
-            <v-btn density="comfortable" icon="mdi-minus" size="small" @click.stop="onMinimizeClick" />
-              <v-btn v-if="!isMobileFullscreen" density="comfortable" :icon="isMaximized ? 'mdi-window-restore' : 'mdi-window-maximize'" size="small"
+              <v-btn density="comfortable" icon="mdi-minus" size="small" @click.stop="onMinimizeClick" />
+              <v-btn v-if="!isMobileFullscreen" density="comfortable"
+                :icon="isMaximized ? 'mdi-window-restore' : 'mdi-window-maximize'" size="small"
                 @click.stop="onMaximizeClick" />
               <v-btn class="wd-window__close-btn" density="comfortable" icon="mdi-close" size="small"
                 @click.stop="onCloseClick" />
@@ -33,7 +27,9 @@
       </header>
 
       <section class="wd-window__content">
-        <slot />
+        <wd-container no-padding fluid>
+          <slot />
+        </wd-container>
       </section>
 
       <footer v-if="$slots.footer" :class="footerClasses">
@@ -42,8 +38,8 @@
 
       <v-overlay :model-value="!isFocused" attach persistent class="wd-window__dim-overlay"></v-overlay>
 
-      <span v-if="!isMobileFullscreen" v-for="handle in resizeHandles" :key="handle" class="wd-window__resize-handle" :class="`is-${handle}`"
-        @pointerdown="(event) => startResize(event, handle)" />
+      <span v-if="!isMobileFullscreen" v-for="handle in resizeHandles" :key="handle" class="wd-window__resize-handle"
+        :class="`is-${handle}`" @pointerdown="(event) => startResize(event, handle)" />
     </v-sheet>
   </transition>
 </template>
@@ -245,6 +241,28 @@ const windowStyle = computed(() => {
     zIndex: activeZIndex.value,
   }
 })
+
+const ensureWithinWorkArea = () => {
+  if (isMobileFullscreen.value || isMinimized.value || isMaximized.value) return
+
+  const rect = getDesktopRect()
+  if (!rect) return
+
+  const minX = rect.offsetX
+  const minY = rect.offsetY
+  const maxX = rect.offsetX + Math.max(0, rect.width - winWidth.value)
+  const maxY = rect.offsetY + Math.max(0, rect.height - winHeight.value)
+
+  const clampedX = clamp(posX.value, minX, maxX)
+  const clampedY = clamp(posY.value, minY, maxY)
+
+  if (clampedX !== posX.value) {
+    posX.value = clampedX
+  }
+  if (clampedY !== posY.value) {
+    posY.value = clampedY
+  }
+}
 
 const onCloseClick = () => {
   emit('close')
@@ -524,6 +542,7 @@ onMounted(() => {
   if (typeof ResizeObserver !== 'undefined') {
     layoutObserver = new ResizeObserver(() => {
       layoutVersion.value += 1
+      ensureWithinWorkArea()
     })
     if (workAreaEl) layoutObserver.observe(workAreaEl)
     if (desktopEl && desktopEl !== workAreaEl) layoutObserver.observe(desktopEl)
@@ -541,6 +560,7 @@ onMounted(() => {
   if (!props.minimized) {
     bringToFront()
   }
+  ensureWithinWorkArea()
 })
 
 const syncMenuRegistration = () => {
@@ -605,6 +625,15 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => isMobileFullscreen.value,
+  isMobile => {
+    if (!isMobile) {
+      ensureWithinWorkArea()
+    }
+  },
+)
+
 </script>
 
 <style scoped lang="scss">
@@ -656,7 +685,7 @@ watch(
   padding: 0 12px;
   // background-color: inherit;
   // border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.14);
-  cursor: move;
+  // cursor: move;
   touch-action: none;
 }
 

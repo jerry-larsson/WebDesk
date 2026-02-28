@@ -60,6 +60,22 @@
       </v-card>
     </v-card>
 
+    <v-card>
+      <v-card-text>
+        <p>Lorem, ipsum dolor.</p>
+        <p>Lorem, ipsum dolor.</p>
+        <p>Lorem, ipsum dolor.</p>
+
+        <v-btn-group>
+          <v-btn variant="tonal">A</v-btn>
+          <v-btn variant="tonal">B</v-btn>
+          <v-btn variant="tonal">C</v-btn>
+        </v-btn-group>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn color="primary" variant="tonal">Hello world</v-btn>
+      </v-card-actions>
+    </v-card>
   </wd-window>
 </template>
 

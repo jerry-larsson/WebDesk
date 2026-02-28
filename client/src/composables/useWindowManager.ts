@@ -37,6 +37,8 @@ interface WdPersistedWindowRecord {
 }
 
 const WINDOW_STATE_STORAGE_KEY = 'wd:window-states:v1'
+const FULLSCREEN_MODE_STORAGE_KEY = 'wd:fullscreen-mode:v1'
+const FOCUSED_WINDOW_STORAGE_KEY = 'wd:focused-window-id:v1'
 const DEFAULT_WINDOW_STATE: WdManagedWindowState = {
   x: 100,
   y: 80,
@@ -51,6 +53,8 @@ const DEFAULT_WINDOW_STATE: WdManagedWindowState = {
 
 const registry = new Map<string, Component>()
 const windowsRef = ref<WdManagedWindow[]>([])
+const fullscreenModeRef = ref(false)
+const persistedFocusedWindowIdRef = ref<string | null>(null)
 const persistedWindows = new Map<string, WdPersistedWindowRecord>()
 let persistTimer: ReturnType<typeof setTimeout> | null = null
 let focusWindowHandler: ((id: string) => boolean) | null = null
@@ -114,6 +118,33 @@ const resolveWindowComponent = (name: string) => {
 }
 
 const canUseStorage = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+const loadPersistedFocusedWindowId = () => {
+  if (!canUseStorage()) return
+  const raw = window.localStorage.getItem(FOCUSED_WINDOW_STORAGE_KEY)
+  persistedFocusedWindowIdRef.value = raw && raw.trim() ? raw : null
+}
+
+const persistFocusedWindowId = () => {
+  if (!canUseStorage()) return
+  if (!persistedFocusedWindowIdRef.value) {
+    window.localStorage.removeItem(FOCUSED_WINDOW_STORAGE_KEY)
+    return
+  }
+  window.localStorage.setItem(FOCUSED_WINDOW_STORAGE_KEY, persistedFocusedWindowIdRef.value)
+}
+
+const loadFullscreenMode = () => {
+  if (!canUseStorage()) return
+  const raw = window.localStorage.getItem(FULLSCREEN_MODE_STORAGE_KEY)
+  if (raw === null) return
+  fullscreenModeRef.value = raw === 'true'
+}
+
+const persistFullscreenMode = () => {
+  if (!canUseStorage()) return
+  window.localStorage.setItem(FULLSCREEN_MODE_STORAGE_KEY, String(fullscreenModeRef.value))
+}
+
 const sanitizePersistedProps = (props: Record<string, unknown>) => {
   const clean: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(props)) {
@@ -180,6 +211,8 @@ const schedulePersistedStatesWrite = () => {
 }
 
 loadPersistedWindows()
+loadFullscreenMode()
+loadPersistedFocusedWindowId()
 
 const openWindow = (name: string, options: WdOpenWindowOptions) => {
   const key = normalizeName(name)
@@ -240,14 +273,31 @@ const openWindow = (name: string, options: WdOpenWindowOptions) => {
 }
 
 const closeWindow = (id: string) => {
+  const targetWindow = windowsRef.value.find(window => window.id === id)
+  const shouldRefocusTopWindow = targetWindow?.state.isFocused ?? false
+
   windowsRef.value = windowsRef.value.filter(window => window.id !== id)
+  if (persistedFocusedWindowIdRef.value === id) {
+    persistedFocusedWindowIdRef.value = null
+    persistFocusedWindowId()
+  }
   persistedWindows.delete(id)
   schedulePersistedStatesWrite()
+
+  if (shouldRefocusTopWindow) {
+    requestAnimationFrame(() => {
+      focusTopVisibleWindow()
+    })
+  }
 }
 
 const closeAllWindows = () => {
   const openIds = windowsRef.value.map(window => window.id)
   windowsRef.value = []
+  if (persistedFocusedWindowIdRef.value && openIds.includes(persistedFocusedWindowIdRef.value)) {
+    persistedFocusedWindowIdRef.value = null
+    persistFocusedWindowId()
+  }
   for (const id of openIds) {
     persistedWindows.delete(id)
   }
@@ -260,6 +310,10 @@ const closeWindowsByName = (name: string) => {
     .filter(window => window.name === key)
     .map(window => window.id)
   windowsRef.value = windowsRef.value.filter(window => window.name !== key)
+  if (persistedFocusedWindowIdRef.value && removedIds.includes(persistedFocusedWindowIdRef.value)) {
+    persistedFocusedWindowIdRef.value = null
+    persistFocusedWindowId()
+  }
   for (const id of removedIds) {
     persistedWindows.delete(id)
   }
@@ -274,6 +328,10 @@ const updateWindowState = (id: string, state: Partial<WdManagedWindowState>) => 
     ...state,
   }
   window.state = nextState
+  if (nextState.isFocused) {
+    persistedFocusedWindowIdRef.value = id
+    persistFocusedWindowId()
+  }
   const previous = persistedWindows.get(id)
   persistedWindows.set(id, {
     name: window.name,
@@ -297,6 +355,7 @@ const updateWindowProps = (id: string, props: Record<string, unknown>) => {
 const setWindowMinimized = (id: string, minimized: boolean) => {
   const window = windowsRef.value.find(item => item.id === id)
   if (!window) return false
+  const wasFocused = window.state.isFocused
 
   window.props = {
     ...window.props,
@@ -320,6 +379,12 @@ const setWindowMinimized = (id: string, minimized: boolean) => {
     },
   })
   schedulePersistedStatesWrite()
+
+  if (minimized && wasFocused) {
+    requestAnimationFrame(() => {
+      focusTopVisibleWindow()
+    })
+  }
   return true
 }
 
@@ -347,7 +412,23 @@ const openPersistedWindows = () => {
     opened.push(id)
   }
 
+  const focusedId = persistedFocusedWindowIdRef.value
+  if (focusedId && windowsRef.value.some(window => window.id === focusedId)) {
+    requestAnimationFrame(() => {
+      focusWindow(focusedId)
+    })
+  }
+
   return { opened, skipped }
+}
+
+const focusTopVisibleWindow = () => {
+  const topVisibleWindow = windowsRef.value
+    .filter(window => !window.state.isMinimized)
+    .sort((a, b) => b.state.zIndex - a.state.zIndex)[0]
+
+  if (!topVisibleWindow) return false
+  return focusWindow(topVisibleWindow.id)
 }
 
 const setFocusWindowHandler = (handler: ((id: string) => boolean) | null) => {
@@ -373,10 +454,25 @@ const focusWindow = (id: string) => {
 const windows = computed(() => windowsRef.value)
 const focusedWindow = computed(() => windowsRef.value.find(window => window.state.isFocused) ?? null)
 
+const setFullscreenMode = (enabled: boolean) => {
+  fullscreenModeRef.value = enabled
+  persistFullscreenMode()
+  return fullscreenModeRef.value
+}
+
+const toggleFullscreenMode = (nextValue?: boolean) => {
+  fullscreenModeRef.value = typeof nextValue === 'boolean'
+    ? nextValue
+    : !fullscreenModeRef.value
+  persistFullscreenMode()
+  return fullscreenModeRef.value
+}
+
 export const useWindowManager = () => {
   return {
     windows: readonly(windows),
     focusedWindow: readonly(focusedWindow),
+    isFullscreenMode: readonly(fullscreenModeRef),
     registerWindow,
     unregisterWindow,
     resolveWindowComponent,
@@ -391,5 +487,7 @@ export const useWindowManager = () => {
     setFocusWindowHandler,
     minimizeWindow,
     restoreWindow,
+    setFullscreenMode,
+    toggleFullscreenMode,
   }
 }
