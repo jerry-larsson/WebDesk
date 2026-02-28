@@ -1,6 +1,6 @@
 <template>
   <transition name="wd-window-minimize">
-    <v-sheet v-show="!isMinimized" :class="windowClasses" :color="windowColor" :elevation="windowElevation"
+    <v-sheet v-show="!isMinimized && !isPeekHidden" :class="windowClasses" :color="windowColor" :elevation="windowElevation"
       :style="windowStyle" tag="article" @pointerdown="bringToFront">
       <header v-if="!isMobileFullscreen" :class="titlebarClasses" @pointerdown="startDrag">
         <div v-if="$slots['titlebar-start'] || !!icon" class="wd-window__titlebar-start">
@@ -82,6 +82,7 @@ const props = withDefaults(
     menuItems?: readonly WdTopMenuItem[]
     minimized?: boolean
     mobileFullscreen?: boolean
+    peekedWindowId?: string | null
   }>(),
   {
     title: 'Window',
@@ -99,6 +100,7 @@ const props = withDefaults(
     menuItems: undefined,
     minimized: false,
     mobileFullscreen: false,
+    peekedWindowId: null,
   },
 )
 const emit = defineEmits<{
@@ -133,6 +135,12 @@ const restoreBounds = ref<WindowBounds | null>(props.restoreBounds ?? null)
 const isInteracting = ref(false)
 const isFocused = computed(() => desktop?.activeWindowId.value === runtimeWindowId)
 const isMinimized = computed(() => !!props.minimized)
+const isPeekHidden = computed(() => {
+  const peekedId = typeof props.peekedWindowId === 'string' ? props.peekedWindowId.trim() : ''
+  const thisId = typeof props.windowId === 'string' ? props.windowId.trim() : ''
+  if (!peekedId || !thisId) return false
+  return peekedId !== thisId
+})
 const isMobileFullscreen = computed(() => !!props.mobileFullscreen)
 const isMaximized = computed(() => snappedSide.value === 'maximized')
 const registeredMenuWindowId = ref<string | null>(null)

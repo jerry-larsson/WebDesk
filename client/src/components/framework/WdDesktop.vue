@@ -12,7 +12,7 @@
     >
       <component
         :is="window.component"
-        v-bind="{ ...window.props, windowId: window.id, mobileFullscreen: isFullscreenMode }"
+        v-bind="{ ...window.props, windowId: window.id, mobileFullscreen: isFullscreenMode, peekedWindowId: windowManager.peekedWindowId.value }"
         @close="windowManager.closeWindow(window.id)"
         @minimize="windowManager.minimizeWindow(window.id)"
         @props-change="handleWindowPropsChange(window.id, $event)"

@@ -55,6 +55,7 @@ const registry = new Map<string, Component>()
 const windowsRef = ref<WdManagedWindow[]>([])
 const fullscreenModeRef = ref(false)
 const persistedFocusedWindowIdRef = ref<string | null>(null)
+const peekedWindowIdRef = ref<string | null>(null)
 const persistedWindows = new Map<string, WdPersistedWindowRecord>()
 let persistTimer: ReturnType<typeof setTimeout> | null = null
 let focusWindowHandler: ((id: string) => boolean) | null = null
@@ -277,6 +278,9 @@ const closeWindow = (id: string) => {
   const shouldRefocusTopWindow = targetWindow?.state.isFocused ?? false
 
   windowsRef.value = windowsRef.value.filter(window => window.id !== id)
+  if (peekedWindowIdRef.value === id) {
+    peekedWindowIdRef.value = null
+  }
   if (persistedFocusedWindowIdRef.value === id) {
     persistedFocusedWindowIdRef.value = null
     persistFocusedWindowId()
@@ -294,6 +298,7 @@ const closeWindow = (id: string) => {
 const closeAllWindows = () => {
   const openIds = windowsRef.value.map(window => window.id)
   windowsRef.value = []
+  peekedWindowIdRef.value = null
   if (persistedFocusedWindowIdRef.value && openIds.includes(persistedFocusedWindowIdRef.value)) {
     persistedFocusedWindowIdRef.value = null
     persistFocusedWindowId()
@@ -310,6 +315,9 @@ const closeWindowsByName = (name: string) => {
     .filter(window => window.name === key)
     .map(window => window.id)
   windowsRef.value = windowsRef.value.filter(window => window.name !== key)
+  if (peekedWindowIdRef.value && removedIds.includes(peekedWindowIdRef.value)) {
+    peekedWindowIdRef.value = null
+  }
   if (persistedFocusedWindowIdRef.value && removedIds.includes(persistedFocusedWindowIdRef.value)) {
     persistedFocusedWindowIdRef.value = null
     persistFocusedWindowId()
@@ -437,6 +445,7 @@ const setFocusWindowHandler = (handler: ((id: string) => boolean) | null) => {
 
 const focusWindow = (id: string) => {
   if (!id.trim()) return false
+  peekedWindowIdRef.value = null
   const targetWindow = windowsRef.value.find(window => window.id === id)
   if (!targetWindow) return false
 
@@ -449,6 +458,37 @@ const focusWindow = (id: string) => {
   }
 
   return focusWindowHandler ? focusWindowHandler(id) : false
+}
+
+const beginPeekWindow = (id: string) => {
+  const targetId = id.trim()
+  if (!targetId) {
+    peekedWindowIdRef.value = null
+    return
+  }
+
+  const targetWindow = windowsRef.value.find(window => window.id === targetId)
+  if (!targetWindow || targetWindow.state.isMinimized) {
+    peekedWindowIdRef.value = null
+    return
+  }
+
+  peekedWindowIdRef.value = targetId
+}
+
+const endPeekWindow = (id?: string) => {
+  if (!id) {
+    peekedWindowIdRef.value = null
+    return
+  }
+
+  if (peekedWindowIdRef.value === id) {
+    peekedWindowIdRef.value = null
+  }
+}
+
+const clearPeekWindow = () => {
+  peekedWindowIdRef.value = null
 }
 
 const windows = computed(() => windowsRef.value)
@@ -472,6 +512,7 @@ export const useWindowManager = () => {
   return {
     windows: readonly(windows),
     focusedWindow: readonly(focusedWindow),
+    peekedWindowId: readonly(peekedWindowIdRef),
     isFullscreenMode: readonly(fullscreenModeRef),
     registerWindow,
     unregisterWindow,
@@ -484,6 +525,9 @@ export const useWindowManager = () => {
     updateWindowProps,
     openPersistedWindows,
     focusWindow,
+    beginPeekWindow,
+    endPeekWindow,
+    clearPeekWindow,
     setFocusWindowHandler,
     minimizeWindow,
     restoreWindow,

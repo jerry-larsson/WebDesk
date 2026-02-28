@@ -35,17 +35,7 @@
           </template>
         </wd-top-menu>
 
-        <wd-taskbar>
-          <template v-for="window in windowManager.windows.value" :key="window.id">
-            <v-tooltip location="top" :text="window.wdProps.title">
-              <template #activator="{ props }">
-                <v-btn v-bind="props" :icon="window.wdProps.icon ?? true"
-                  :variant="window.id === windowManager.focusedWindow.value?.id ? 'elevated' : 'text'" rounded
-                  @click="taskbarIconClick(window)"></v-btn>
-              </template>
-            </v-tooltip>
-          </template>
-        </wd-taskbar>
+        <wd-taskbar></wd-taskbar>
       </wd-desktop>
     </v-main>
   </v-app>
@@ -108,14 +98,6 @@ onBeforeUnmount(() => {
 onMounted(() => {
   windowManager.openPersistedWindows()
 })
-
-function taskbarIconClick(window: WdManagedWindow) {
-  window.state.isMinimized 
-    ? windowManager.focusWindow(window.id) 
-    : (window.state.isFocused 
-      ? windowManager.minimizeWindow(window.id) 
-      : windowManager.focusWindow(window.id));
-}
 </script>
 
 <style scoped>
