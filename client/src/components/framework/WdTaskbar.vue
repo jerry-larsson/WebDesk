@@ -10,7 +10,7 @@
         <v-menu location="top center" open-delay="120" open-on-hover close-delay="80">
           <template #activator="{ props: activatorProps }">
             <v-badge class="wd-taskbar__group-badge" :content="group.windows.length > 1 ? group.windows.length : undefined"
-              :model-value="group.windows.length > 1" color="primary" floating location="right top">
+              :model-value="group.windows.length > 1" floating location="right top">
               <v-btn v-bind="activatorProps" :icon="group.icon || true" :variant="group.isFocused ? 'elevated' : 'text'"
                 rounded @click="taskbarGroupClick(group)" />
             </v-badge>
@@ -237,8 +237,11 @@ const focusFromPreview = (id: string) => {
 }
 
 .wd-taskbar__group-badge :deep(.v-badge__badge) {
-  top: 3px;
-  right: 3px;
-  transform: none;
+  top: 2px !important;
+  right: 2px !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: translate(0, 0) !important;
+  pointer-events: none;
 }
 </style>
