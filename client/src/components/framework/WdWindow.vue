@@ -56,6 +56,19 @@ type DesktopRect = Pick<DOMRect, 'left' | 'top' | 'width' | 'height'> & {
   offsetY: number
 }
 type WindowBounds = { x: number, y: number, width: number, height: number }
+type WdWindowEventState = {
+  x: number
+  y: number
+  width: number
+  height: number
+  zIndex: number
+  isFocused: boolean
+  isMinimized: boolean
+  isMaximized: boolean
+  isMobileFullscreen: boolean
+  snappedSide: SnapSide
+  restoreBounds: WindowBounds | null
+}
 const WINDOW_ID_COUNTER_KEY = '__wdWindowIdCounter__'
 
 const getNextWindowId = () => {
@@ -106,6 +119,19 @@ const props = withDefaults(
 const emit = defineEmits<{
   close: []
   minimize: []
+  open: [state: WdWindowEventState]
+  closed: [state: WdWindowEventState]
+  gainFocus: [state: WdWindowEventState]
+  lostFocus: [state: WdWindowEventState]
+  minimized: [state: WdWindowEventState]
+  maximized: [state: WdWindowEventState]
+  restored: [state: WdWindowEventState & { from: 'minimized' | 'maximized' | 'fullscreen' }]
+  enterFullscreen: [state: WdWindowEventState]
+  leaveFullscreen: [state: WdWindowEventState]
+  moved: [state: WdWindowEventState]
+  resized: [state: WdWindowEventState]
+  snapped: [state: WdWindowEventState & { side: Exclude<SnapSide, null> }]
+  unsnapped: [state: WdWindowEventState & { from: Exclude<SnapSide, null> }]
   maximizeToggle: [maximized: boolean]
   propsChange: [props: Record<string, unknown>]
   stateChange: [state: {
@@ -147,6 +173,7 @@ const registeredMenuWindowId = ref<string | null>(null)
 const viewportWidth = ref(window.innerWidth)
 const viewportHeight = ref(window.innerHeight)
 const layoutVersion = ref(0)
+const isLifecycleReady = ref(false)
 let layoutObserver: ResizeObserver | null = null
 const onViewportResize = () => {
   viewportWidth.value = window.innerWidth
@@ -192,6 +219,19 @@ const resizeHandles: ResizeDirection[] = [
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 const SNAP_THRESHOLD_PX = 16
+const getEventState = (): WdWindowEventState => ({
+  x: posX.value,
+  y: posY.value,
+  width: winWidth.value,
+  height: winHeight.value,
+  zIndex: activeZIndex.value,
+  isFocused: isFocused.value,
+  isMinimized: isMinimized.value,
+  isMaximized: isMaximized.value,
+  isMobileFullscreen: isMobileFullscreen.value,
+  snappedSide: snappedSide.value,
+  restoreBounds: restoreBounds.value ? { ...restoreBounds.value } : null,
+})
 
 const getDesktopRect = (): DesktopRect | null => {
   const desktopEl = desktop?.desktopRef.value
@@ -569,6 +609,8 @@ onMounted(() => {
     bringToFront()
   }
   ensureWithinWorkArea()
+  emit('open', getEventState())
+  isLifecycleReady.value = true
 })
 
 const syncMenuRegistration = () => {
@@ -598,6 +640,7 @@ watch(() => props.windowId, syncMenuRegistration, { immediate: true })
 watch(() => props.menuItems, syncMenuRegistration, { deep: true })
 
 onBeforeUnmount(() => {
+  emit('closed', getEventState())
   window.removeEventListener('resize', onViewportResize)
   layoutObserver?.disconnect()
   layoutObserver = null
@@ -635,9 +678,86 @@ watch(
 
 watch(
   () => isMobileFullscreen.value,
-  isMobile => {
+  (isMobile, wasMobile) => {
+    if (isLifecycleReady.value && isMobile !== wasMobile) {
+      if (isMobile) {
+        emit('enterFullscreen', getEventState())
+      } else {
+        emit('leaveFullscreen', getEventState())
+        emit('restored', { ...getEventState(), from: 'fullscreen' })
+      }
+    }
+
     if (!isMobile) {
       ensureWithinWorkArea()
+    }
+  },
+)
+
+watch(
+  () => isFocused.value,
+  (next, prev) => {
+    if (!isLifecycleReady.value || next === prev) return
+    if (next) {
+      emit('gainFocus', getEventState())
+      return
+    }
+    emit('lostFocus', getEventState())
+  },
+)
+
+watch(
+  () => isMinimized.value,
+  (next, prev) => {
+    if (!isLifecycleReady.value || next === prev) return
+    if (next) {
+      emit('minimized', getEventState())
+      return
+    }
+    emit('restored', { ...getEventState(), from: 'minimized' })
+  },
+)
+
+watch(
+  () => isMaximized.value,
+  (next, prev) => {
+    if (!isLifecycleReady.value || next === prev) return
+    if (next) {
+      emit('maximized', getEventState())
+      return
+    }
+    emit('restored', { ...getEventState(), from: 'maximized' })
+  },
+)
+
+watch(
+  [posX, posY],
+  ([nextX, nextY], [prevX, prevY]) => {
+    if (!isLifecycleReady.value) return
+    if (nextX === prevX && nextY === prevY) return
+    emit('moved', getEventState())
+  },
+)
+
+watch(
+  [winWidth, winHeight],
+  ([nextWidth, nextHeight], [prevWidth, prevHeight]) => {
+    if (!isLifecycleReady.value) return
+    if (nextWidth === prevWidth && nextHeight === prevHeight) return
+    emit('resized', getEventState())
+  },
+)
+
+watch(
+  () => snappedSide.value,
+  (next, prev) => {
+    if (!isLifecycleReady.value || next === prev) return
+    if (next) {
+      emit('snapped', { ...getEventState(), side: next })
+      return
+    }
+    if (prev) {
+      emit('unsnapped', { ...getEventState(), from: prev })
     }
   },
 )
