@@ -9,58 +9,69 @@
       </v-text-field>
     </div>
 
-    <v-card border class="d-flex justify-space-evenly">
-      <v-card class="w-33">
-        <v-card-title class="d-flex">
-          <v-badge class="mr-1" dot inline color="error"></v-badge>
-          <span class="text-body-large">Ej påbörjad</span>
-        </v-card-title>
-        <v-divider></v-divider>
-        <v-card-text class="pa-2">
-          <v-card border class="border-error border-t-lg border-opacity-100 pa-2">
-            <span class="text-body-large">Mitt nya projekt</span>
+    <v-card border>
+      <wd-row gap="0">
+        <wd-col cols="12" md="4">
+          <v-card class="h-100" elevation="0" :rounded="false">
+            <v-card-title class="d-flex">
+              <v-badge class="mr-1" dot inline color="error"></v-badge>
+              <span class="text-body-large">Ej påbörjad</span>
+            </v-card-title>
+            <v-divider></v-divider>
+            <v-card-text class="pa-2">
+              <v-card border class="border-error border-t-lg border-opacity-100 pa-2">
+                <span class="text-body-large">Mitt nya projekt</span>
+              </v-card>
+            </v-card-text>
           </v-card>
-        </v-card-text>
+        </wd-col>
+
+        <wd-col cols="12" md="4">
+          <v-card class="h-100" elevation="0" :rounded="false">
+            <v-card-title class="d-flex">
+              <v-badge class="mr-1" dot inline color="warning"></v-badge>
+              <span class="text-body-large">Pågående</span>
+            </v-card-title>
+            <v-divider></v-divider>
+            <v-card-text class="pa-2">
+              <v-card border class="border-warning border-t-lg border-opacity-100 pa-2">
+                <span class="text-body-large">Mitt påbörjade projekt</span>
+              </v-card>
+            </v-card-text>
+          </v-card>
+        </wd-col>
+
+        <wd-col cols="12" md="4">
+          <v-card class="h-100" elevation="0" :rounded="false">
+            <v-card-title class="d-flex">
+              <v-badge class="mr-1" dot inline color="success"></v-badge>
+              <span class="text-body-large">Klar</span>
+            </v-card-title>
+            <v-divider></v-divider>
+            <v-card-text class="pa-2 d-flex ga-2 flex-column">
+              <v-card border class="border-success border-t-lg border-opacity-100 pa-2">
+                <span class="text-body-large">Mitt färdiga projekt 1</span>
+              </v-card>
+              <v-card border class="border-success border-t-lg border-opacity-100 pa-2">
+                <span class="text-body-large">Mitt färdiga projekt 2</span>
+              </v-card>
+              <v-card border class="border-success border-t-lg border-opacity-100 pa-2">
+                <span class="text-body-large">Mitt färdiga projekt 3</span>
+              </v-card>
+            </v-card-text>
+          </v-card>
+        </wd-col>
+      </wd-row>
       </v-card>
 
-      <v-divider vertical></v-divider>
+      <!-- <v-divider vertical></v-divider>
 
-      <v-card class="w-33">
-        <v-card-title class="d-flex">
-          <v-badge class="mr-1" dot inline color="warning"></v-badge>
-          <span class="text-body-large">Pågående</span>
-        </v-card-title>
-        <v-divider></v-divider>
-        <v-card-text class="pa-2">
-          <v-card border class="border-warning border-t-lg border-opacity-100 pa-2">
-            <span class="text-body-large">Mitt påbörjade projekt</span>
-          </v-card>
-        </v-card-text>
-      </v-card>
 
-      <v-divider vertical></v-divider>
 
-      <v-card class="w-33">
-        <v-card-title class="d-flex">
-          <v-badge class="mr-1" dot inline color="success"></v-badge>
-          <span class="text-body-large">Klar</span>
-        </v-card-title>
-        <v-divider></v-divider>
-        <v-card-text class="pa-2 d-flex ga-2 flex-column">
-          <v-card border class="border-success border-t-lg border-opacity-100 pa-2">
-            <span class="text-body-large">Mitt färdiga projekt 1</span>
-          </v-card>
-          <v-card border class="border-success border-t-lg border-opacity-100 pa-2">
-            <span class="text-body-large">Mitt färdiga projekt 2</span>
-          </v-card>
-          <v-card border class="border-success border-t-lg border-opacity-100 pa-2">
-            <span class="text-body-large">Mitt färdiga projekt 3</span>
-          </v-card>
-        </v-card-text>
-      </v-card>
-    </v-card>
+      <v-divider vertical></v-divider> -->
 
-    <v-card>
+
+    <v-card border class="mt-4">
       <v-card-text>
         <p>Lorem, ipsum dolor.</p>
         <p>Lorem, ipsum dolor.</p>
