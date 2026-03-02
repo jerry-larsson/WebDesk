@@ -22,6 +22,7 @@ export interface WdManagedWindowState {
   isFocused: boolean
   isMinimized: boolean
   isMaximized: boolean
+  snappedSide: 'left' | 'right' | 'maximized' | null
   restoreBounds: {
     x: number
     y: number
@@ -48,6 +49,7 @@ const DEFAULT_WINDOW_STATE: WdManagedWindowState = {
   isFocused: false,
   isMinimized: false,
   isMaximized: false,
+  snappedSide: null,
   restoreBounds: null,
 }
 
@@ -66,6 +68,7 @@ const NON_PERSISTED_WINDOW_PROP_KEYS = new Set([
   'height',
   'zIndex',
   'maximized',
+  'snappedSide',
   'minimized',
   'restoreBounds',
   'windowId',
@@ -167,12 +170,15 @@ const loadPersistedWindows = () => {
 
       const maybeRecord = payload as Partial<WdPersistedWindowRecord>
       if (typeof maybeRecord.name === 'string' && maybeRecord.name && maybeRecord.state) {
+        const normalizedSnappedSide = maybeRecord.state.snappedSide
+          ?? (maybeRecord.state.isMaximized ? 'maximized' : null)
         persistedWindows.set(id, {
           name: normalizeName(maybeRecord.name),
           props: sanitizePersistedProps((maybeRecord.props ?? {}) as Record<string, unknown>),
           state: {
             ...DEFAULT_WINDOW_STATE,
             ...maybeRecord.state,
+            snappedSide: normalizedSnappedSide,
             isFocused: false,
           },
         })
@@ -180,12 +186,15 @@ const loadPersistedWindows = () => {
       }
 
       const legacyState = payload as Partial<WdManagedWindowState>
+      const normalizedLegacySnappedSide = legacyState.snappedSide
+        ?? (legacyState.isMaximized ? 'maximized' : null)
       persistedWindows.set(id, {
         name: '',
         props: {},
         state: {
           ...DEFAULT_WINDOW_STATE,
           ...legacyState,
+          snappedSide: normalizedLegacySnappedSide,
           isFocused: false,
         },
       })
@@ -248,7 +257,8 @@ const openWindow = (name: string, options: WdOpenWindowOptions) => {
     height: initialState.height,
     zIndex: initialState.zIndex,
     minimized: initialState.isMinimized,
-    maximized: initialState.isMaximized,
+    maximized: initialState.snappedSide === 'maximized',
+    snappedSide: initialState.snappedSide,
     restoreBounds: initialState.restoreBounds ? { ...initialState.restoreBounds } : null,
   }
 

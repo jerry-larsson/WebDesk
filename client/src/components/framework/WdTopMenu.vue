@@ -1,8 +1,8 @@
 <template>
-  <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center pl-1 pr-0 overflow-hidden" color="surface" elevation="0"
-    rounded="0" :style="topMenuStyle">
-    <div class="wd-top-menu__section wd-top-menu__section--start d-flex align-center ga-2">
-      <div v-if="showFullscreenWindowChrome" class="wd-top-menu__window-info d-flex align-center">
+  <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center pr-0 overflow-hidden" color="surface"
+    elevation="0" rounded="0" :style="topMenuStyle">
+    <div class="wd-top-menu__section wd-top-menu__section--start d-flex align-center ga-0">
+      <div v-if="showFullscreenWindowIcon" class="wd-top-menu__window-info d-flex align-center pl-2">
         <v-icon :icon="focusedWindowIcon" size="18" />
       </div>
       <slot name="start" />
@@ -17,19 +17,22 @@
       <wd-top-menu-items v-else :items="focusedMenuItems" />
     </div>
 
-    <div class="wd-top-menu__section wd-top-menu__section--center d-flex align-center justify-center ga-2">
+    <div class="wd-top-menu__section wd-top-menu__section--center d-flex align-center justify-center ga-0">
       <span class="text-caption text-center w-100">{{ focusedWindowTitle }}</span>
       <slot />
     </div>
 
-    <div class="wd-top-menu__section wd-top-menu__section--end d-flex align-center justify-end ga-2">
-      <div v-if="showFullscreenWindowChrome" class="wd-top-menu__window-actions d-flex align-center">
-        <v-btn icon="mdi-minus" size="small" variant="text" rounded @click.stop="onMinimizeFocusedWindow" />
-        <v-btn class="wd-top-menu__close-btn" icon="mdi-close" size="small" variant="text" rounded
-          @click.stop="onCloseFocusedWindow" />
+    <div class="wd-top-menu__section wd-top-menu__section--end d-flex align-center justify-end ga-0">
+      <div class="wd-top-menu__window-actions d-flex align-center">
+        <template v-if="showFullscreenWindowChrome">
+          <v-btn icon="mdi-minus" size="small" variant="text" rounded @click.stop="onMinimizeFocusedWindow" />
+          <v-btn class="wd-top-menu__close-btn" icon="mdi-close" size="small" variant="text" rounded
+            @click.stop="onCloseFocusedWindow" />
+        </template>
+
+        <v-btn v-if="!isMobile" @click="windowManager.toggleFullscreenMode()" icon="mdi-fullscreen" rounded variant="text" size="small"></v-btn>
       </div>
 
-      <v-btn @click="windowManager.toggleFullscreenMode()" icon="mdi-fullscreen" rounded variant="text"></v-btn>
       <slot name="end" />
     </div>
   </v-sheet>
@@ -39,7 +42,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWindowManager } from '@/composables/useWindowManager'
 import { useTopMenu } from '@/composables/useTopMenu'
-import { useDisplay } from 'vuetify'
+import { useResponsiveMode } from '@/composables/useResponsiveMode'
 
 const props = withDefaults(
   defineProps<{
@@ -56,11 +59,12 @@ const topMenuStyle = computed(() => ({
 }))
 const windowManager = useWindowManager()
 const topMenu = useTopMenu()
-const display = useDisplay()
+const { isMobile } = useResponsiveMode()
 const focusedWindow = computed(() => windowManager.focusedWindow.value)
 const focusedMenuItems = computed(() => topMenu.focusedMenuItems.value)
-const showCollapsedFocusedMenuItems = computed(() => display.mdAndDown.value && focusedMenuItems.value.length > 0)
+const showCollapsedFocusedMenuItems = computed(() => isMobile.value && focusedMenuItems.value.length > 0)
 const showFullscreenWindowChrome = computed(() => Boolean(focusedWindow.value?.wdProps?.mobileFullscreen))
+const showFullscreenWindowIcon = computed(() => showFullscreenWindowChrome.value && !isMobile.value)
 const focusedWindowIcon = computed(() => {
   const icon = focusedWindow.value?.wdProps?.icon
   return typeof icon === 'string' && icon ? icon : 'mdi-application-outline'
@@ -153,7 +157,7 @@ const onCloseFocusedWindow = () => {
 }
 
 .wd-top-menu__window-actions {
-  margin-right: -8px;
+  /* margin-right: -8px; */
   gap: 2px;
 }
 

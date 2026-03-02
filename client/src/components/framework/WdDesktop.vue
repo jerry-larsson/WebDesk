@@ -27,7 +27,7 @@
 import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { wdDesktopContextKey, type WdDesktopContext } from './WdDesktopContext'
 import { useWindowManager, type WdManagedWindowState } from '@/composables/useWindowManager'
-import { useDisplay } from 'vuetify'
+import { useResponsiveMode } from '@/composables/useResponsiveMode'
 
 const props = withDefaults(
   defineProps<{
@@ -44,8 +44,7 @@ const workAreaRef = ref<HTMLElement | null>(null)
 const zCounter = ref(10)
 const activeWindowId = ref<number | null>(null)
 const windowManager = useWindowManager()
-const display = useDisplay()
-const isMobile = computed(() => display.mdAndDown.value)
+const { isMobile } = useResponsiveMode()
 const isFullscreenMode = computed(() => isMobile.value || windowManager.isFullscreenMode.value)
 
 const managedWindows = computed(() => {

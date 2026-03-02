@@ -42,6 +42,11 @@
         :class="`is-${handle}`" @pointerdown="(event) => startResize(event, handle)" />
     </v-sheet>
   </transition>
+  <teleport :to="snapPreviewTeleportTarget">
+    <transition name="wd-window-snap-preview">
+      <div v-if="snapPreviewStyle" class="wd-window__snap-preview" :style="snapPreviewStyle" />
+    </transition>
+  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -69,6 +74,12 @@ type WdWindowEventState = {
   snappedSide: SnapSide
   restoreBounds: WindowBounds | null
 }
+type SnapPreviewBounds = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 const WINDOW_ID_COUNTER_KEY = '__wdWindowIdCounter__'
 
 const getNextWindowId = () => {
@@ -85,10 +96,13 @@ const props = withDefaults(
     y?: number
     width?: number
     height?: number
+    initialWidth?: number
+    initialHeight?: number
     minWidth?: number
     minHeight?: number
     zIndex?: number
     maximized?: boolean
+    snappedSide?: SnapSide
     restoreBounds?: WindowBounds | null
     icon?: string
     windowId?: string
@@ -103,10 +117,13 @@ const props = withDefaults(
     y: 80,
     width: 520,
     height: 360,
+    initialWidth: undefined,
+    initialHeight: undefined,
     minWidth: 260,
     minHeight: 180,
     zIndex: 1,
     maximized: false,
+    snappedSide: null,
     restoreBounds: null,
     icon: undefined,
     windowId: undefined,
@@ -143,6 +160,7 @@ const emit = defineEmits<{
     isFocused: boolean
     isMinimized: boolean
     isMaximized: boolean
+    snappedSide: SnapSide
     restoreBounds: WindowBounds | null
   }]
 }>()
@@ -151,12 +169,13 @@ const desktop = inject<WdDesktopContext | null>(wdDesktopContextKey, null)
 const topMenu = useTopMenu()
 const runtimeWindowId = getNextWindowId()
 
+const isManagedWindow = Boolean(props.windowId?.trim())
 const posX = ref(props.x)
 const posY = ref(props.y)
-const winWidth = ref(props.width)
-const winHeight = ref(props.height)
+const winWidth = ref(isManagedWindow ? props.width : (props.initialWidth ?? props.width))
+const winHeight = ref(isManagedWindow ? props.height : (props.initialHeight ?? props.height))
 const activeZIndex = ref(props.zIndex)
-const snappedSide = ref<SnapSide>(props.maximized ? 'maximized' : null)
+const snappedSide = ref<SnapSide>(props.snappedSide ?? (props.maximized ? 'maximized' : null))
 const restoreBounds = ref<WindowBounds | null>(props.restoreBounds ?? null)
 const isInteracting = ref(false)
 const isFocused = computed(() => desktop?.activeWindowId.value === runtimeWindowId)
@@ -174,6 +193,7 @@ const viewportWidth = ref(window.innerWidth)
 const viewportHeight = ref(window.innerHeight)
 const layoutVersion = ref(0)
 const isLifecycleReady = ref(false)
+const snapPreview = ref<SnapPreviewBounds | null>(null)
 let layoutObserver: ResizeObserver | null = null
 const onViewportResize = () => {
   viewportWidth.value = window.innerWidth
@@ -218,8 +238,8 @@ const resizeHandles: ResizeDirection[] = [
   'bottom-right',
 ]
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 const SNAP_THRESHOLD_PX = 16
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 const getEventState = (): WdWindowEventState => ({
   x: posX.value,
   y: posY.value,
@@ -290,28 +310,17 @@ const windowStyle = computed(() => {
     zIndex: activeZIndex.value,
   }
 })
-
-const ensureWithinWorkArea = () => {
-  if (isMobileFullscreen.value || isMinimized.value || isMaximized.value) return
-
-  const rect = getDesktopRect()
-  if (!rect) return
-
-  const minX = rect.offsetX
-  const minY = rect.offsetY
-  const maxX = rect.offsetX + Math.max(0, rect.width - winWidth.value)
-  const maxY = rect.offsetY + Math.max(0, rect.height - winHeight.value)
-
-  const clampedX = clamp(posX.value, minX, maxX)
-  const clampedY = clamp(posY.value, minY, maxY)
-
-  if (clampedX !== posX.value) {
-    posX.value = clampedX
+const snapPreviewStyle = computed(() => {
+  if (!snapPreview.value) return null
+  return {
+    left: `${snapPreview.value.x}px`,
+    top: `${snapPreview.value.y}px`,
+    width: `${snapPreview.value.width}px`,
+    height: `${snapPreview.value.height}px`,
+    zIndex: Math.max(1, activeZIndex.value - 1),
   }
-  if (clampedY !== posY.value) {
-    posY.value = clampedY
-  }
-}
+})
+const snapPreviewTeleportTarget = computed<HTMLElement | string>(() => desktop?.desktopRef.value ?? 'body')
 
 const applySnappedLayout = () => {
   if (isMobileFullscreen.value) return
@@ -338,11 +347,8 @@ const applySnappedLayout = () => {
 }
 
 const syncLayoutToWorkArea = () => {
-  if (snappedSide.value) {
-    applySnappedLayout()
-    return
-  }
-  ensureWithinWorkArea()
+  if (!snappedSide.value) return
+  applySnappedLayout()
 }
 
 const onCloseClick = () => {
@@ -392,6 +398,23 @@ const onMaximizeClick = () => {
   emit('maximizeToggle', true)
 }
 
+const getSnapPreviewBounds = (desktopRect: DesktopRect, localX: number, localY: number): SnapPreviewBounds | null => {
+  const isAtLeftEdge = localX <= SNAP_THRESHOLD_PX
+  const isAtRightEdge = localX >= desktopRect.width - SNAP_THRESHOLD_PX
+  const isAtTopEdge = localY <= SNAP_THRESHOLD_PX
+
+  if (!isAtLeftEdge && !isAtRightEdge && !isAtTopEdge) {
+    return null
+  }
+
+  return {
+    x: isAtTopEdge ? desktopRect.left : isAtLeftEdge ? desktopRect.left : desktopRect.left + (desktopRect.width / 2),
+    y: desktopRect.top,
+    width: isAtTopEdge ? desktopRect.width : desktopRect.width / 2,
+    height: desktopRect.height,
+  }
+}
+
 const startDrag = (event: PointerEvent) => {
   if (isMobileFullscreen.value) return
   if (event.pointerType === 'mouse' && event.button !== 0) return
@@ -401,6 +424,7 @@ const startDrag = (event: PointerEvent) => {
 
   event.preventDefault()
   bringToFront()
+  snapPreview.value = null
   isInteracting.value = true
     ; (event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId)
 
@@ -419,6 +443,14 @@ const startDrag = (event: PointerEvent) => {
   const onMove = (moveEvent: PointerEvent) => {
     if (!didDrag && Math.hypot(moveEvent.clientX - startMouseX, moveEvent.clientY - startMouseY) > 4) {
       didDrag = true
+    }
+
+    if (desktopRect && didDrag) {
+      const localMouseX = moveEvent.clientX - desktopRect.left
+      const localMouseY = moveEvent.clientY - desktopRect.top
+      snapPreview.value = getSnapPreviewBounds(desktopRect, localMouseX, localMouseY)
+    } else {
+      snapPreview.value = null
     }
 
     if (desktopRect && snappedSide.value && restoreBounds.value) {
@@ -462,26 +494,31 @@ const startDrag = (event: PointerEvent) => {
 
     const nextX = dragStartX + (moveEvent.clientX - dragStartMouseX)
     const nextY = dragStartY + (moveEvent.clientY - dragStartMouseY)
-    const minX = desktopRect ? desktopRect.offsetX : Number.NEGATIVE_INFINITY
-    const minY = desktopRect ? desktopRect.offsetY : Number.NEGATIVE_INFINITY
-    const maxX = desktopRect ? desktopRect.offsetX + desktopRect.width - winWidth.value : Number.POSITIVE_INFINITY
-    const maxY = desktopRect ? desktopRect.offsetY + desktopRect.height - winHeight.value : Number.POSITIVE_INFINITY
 
-    posX.value = desktopRect ? clamp(nextX, minX, Math.max(minX, maxX)) : nextX
-    posY.value = desktopRect ? clamp(nextY, minY, Math.max(minY, maxY)) : nextY
+    if (desktopRect) {
+      const minX = desktopRect.offsetX
+      const minY = desktopRect.offsetY
+      const maxX = desktopRect.offsetX + Math.max(0, desktopRect.width - winWidth.value)
+      const maxY = desktopRect.offsetY + Math.max(0, desktopRect.height - winHeight.value)
+      posX.value = clamp(nextX, minX, maxX)
+      posY.value = clamp(nextY, minY, maxY)
+      return
+    }
+
+    posX.value = nextX
+    posY.value = nextY
   }
 
   const onUp = (upEvent: PointerEvent) => {
     let pendingSnap: { side: Exclude<SnapSide, null>, x: number, y: number, width: number, height: number } | null = null
+    snapPreview.value = null
 
     if (desktopRect && didDrag) {
       const localUpX = upEvent.clientX - desktopRect.left
       const localUpY = upEvent.clientY - desktopRect.top
-      const isAtLeftEdge = localUpX <= SNAP_THRESHOLD_PX
-      const isAtRightEdge = localUpX >= desktopRect.width - SNAP_THRESHOLD_PX
-      const isAtTopEdge = localUpY <= SNAP_THRESHOLD_PX
+      const preview = getSnapPreviewBounds(desktopRect, localUpX, localUpY)
 
-      if (isAtLeftEdge || isAtRightEdge || isAtTopEdge) {
+      if (preview) {
         if (!snappedSide.value || !restoreBounds.value) {
           restoreBounds.value = {
             x: posX.value,
@@ -492,10 +529,10 @@ const startDrag = (event: PointerEvent) => {
         }
 
         pendingSnap = {
-          side: isAtTopEdge ? 'maximized' : isAtLeftEdge ? 'left' : 'right',
-          x: isAtTopEdge ? desktopRect.offsetX : isAtLeftEdge ? desktopRect.offsetX : desktopRect.offsetX + (desktopRect.width / 2),
+          side: localUpY <= SNAP_THRESHOLD_PX ? 'maximized' : localUpX <= SNAP_THRESHOLD_PX ? 'left' : 'right',
+          x: localUpY <= SNAP_THRESHOLD_PX ? desktopRect.offsetX : localUpX <= SNAP_THRESHOLD_PX ? desktopRect.offsetX : desktopRect.offsetX + (desktopRect.width / 2),
           y: desktopRect.offsetY,
-          width: isAtTopEdge ? desktopRect.width : desktopRect.width / 2,
+          width: localUpY <= SNAP_THRESHOLD_PX ? desktopRect.width : desktopRect.width / 2,
           height: desktopRect.height,
         }
       } else {
@@ -546,8 +583,6 @@ const startResize = (event: PointerEvent, direction: ResizeDirection) => {
   const startY = posY.value
   const startWidth = winWidth.value
   const startHeight = winHeight.value
-  const desktopRect = getDesktopRect()
-
   const onMove = (moveEvent: PointerEvent) => {
     const deltaX = moveEvent.clientX - startMouseX
     const deltaY = moveEvent.clientY - startMouseY
@@ -570,32 +605,6 @@ const startResize = (event: PointerEvent, direction: ResizeDirection) => {
     if (direction.includes('top')) {
       nextHeight = Math.max(props.minHeight, startHeight - deltaY)
       nextY = startY + (startHeight - nextHeight)
-    }
-
-    if (desktopRect) {
-      const minX = desktopRect.offsetX
-      const minY = desktopRect.offsetY
-      const maxRight = desktopRect.offsetX + desktopRect.width
-      const maxBottom = desktopRect.offsetY + desktopRect.height
-
-      if (nextX < minX) {
-        nextWidth += nextX - minX
-        nextX = minX
-      }
-      if (nextY < minY) {
-        nextHeight += nextY - minY
-        nextY = minY
-      }
-
-      if (nextX + nextWidth > maxRight) {
-        nextWidth = maxRight - nextX
-      }
-      if (nextY + nextHeight > maxBottom) {
-        nextHeight = maxBottom - nextY
-      }
-
-      nextWidth = Math.max(props.minWidth, nextWidth)
-      nextHeight = Math.max(props.minHeight, nextHeight)
     }
 
     posX.value = nextX
@@ -673,6 +682,7 @@ watch(() => props.windowId, syncMenuRegistration, { immediate: true })
 watch(() => props.menuItems, syncMenuRegistration, { deep: true })
 
 onBeforeUnmount(() => {
+  snapPreview.value = null
   emit('closed', getEventState())
   window.removeEventListener('resize', onViewportResize)
   layoutObserver?.disconnect()
@@ -692,7 +702,7 @@ watch(
 )
 
 watch(
-  [posX, posY, winWidth, winHeight, activeZIndex, isFocused, isMinimized, isMaximized, restoreBounds],
+  [posX, posY, winWidth, winHeight, activeZIndex, isFocused, isMinimized, isMaximized, snappedSide, restoreBounds],
   () => {
     emit('stateChange', {
       x: posX.value,
@@ -703,6 +713,7 @@ watch(
       isFocused: isFocused.value,
       isMinimized: isMinimized.value,
       isMaximized: isMaximized.value,
+      snappedSide: snappedSide.value,
       restoreBounds: restoreBounds.value ? { ...restoreBounds.value } : null,
     })
   },
@@ -1004,5 +1015,38 @@ watch(
 .wd-window-minimize-leave-to {
   opacity: 0;
   transform: translateY(160px) scale(0.35);
+}
+
+.wd-window__snap-preview {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.55);
+  background-color: rgba(var(--v-theme-primary), 0.16);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--v-theme-on-primary), 0.15),
+    0 14px 32px rgba(0, 0, 0, 0.18);
+  transition:
+    left 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 120ms ease;
+}
+
+.wd-window-snap-preview-enter-active,
+.wd-window-snap-preview-leave-active {
+  transition:
+    opacity 120ms ease,
+    transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.wd-window-snap-preview-enter-from,
+.wd-window-snap-preview-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
 }
 </style>

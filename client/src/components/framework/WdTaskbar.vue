@@ -1,7 +1,7 @@
 <template>
   <v-sheet ref="taskbarRef" class="wd-taskbar d-flex align-center px-3" color="surface" elevation="0" rounded="0"
     :style="taskbarStyle">
-    <div class="wd-taskbar__section wd-taskbar__section--start d-flex align-center ga-1">
+    <div v-if="$slots['start']" class="wd-taskbar__section wd-taskbar__section--start d-flex align-center ga-1">
       <slot name="start" />
     </div>
 
@@ -11,7 +11,7 @@
           <template #activator="{ props: activatorProps }">
             <v-badge class="wd-taskbar__group-badge" :content="group.windows.length > 1 ? group.windows.length : undefined"
               :model-value="group.windows.length > 1" floating location="right top">
-              <v-btn v-bind="activatorProps" :icon="group.icon || true" :variant="group.isFocused ? 'elevated' : 'text'"
+              <v-btn v-bind="activatorProps" :icon="group.icon || 'mdi-window-maximize'" :variant="group.isFocused ? 'elevated' : 'text'"
                 rounded @click="taskbarGroupClick(group)" />
             </v-badge>
           </template>
@@ -50,7 +50,7 @@
       <slot />
     </div>
 
-    <div class="wd-taskbar__section wd-taskbar__section--end d-flex align-center justify-end ga-1">
+    <div v-if="$slots['end']" class="wd-taskbar__section wd-taskbar__section--end d-flex align-center justify-end ga-1">
       <slot name="end" />
     </div>
   </v-sheet>
