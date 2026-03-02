@@ -62,9 +62,9 @@
           </v-card>
         </wd-col>
       </wd-row>
-      </v-card>
+    </v-card>
 
-      <!-- <v-divider vertical></v-divider>
+    <!-- <v-divider vertical></v-divider>
 
 
 
@@ -84,7 +84,27 @@
         </v-btn-group>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="primary" variant="tonal">Hello world</v-btn>
+        <v-btn color="primary" variant="tonal">Do nothing</v-btn>
+
+        <wd-dialog title="Project dialog" persistent>
+          <template #activator="activatorProps">
+            <v-btn v-bind="activatorProps" color="primary" variant="tonal">Show modal dialog</v-btn>
+          </template>
+
+          <template #default="{ isActive }">
+            <v-card>
+              <v-card-title>Dialog content</v-card-title>
+              <v-card-text>
+                <p class="ma-0">This is a modal dialog inside the window. It's persistent!</p>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn @click="isActive.value = false">Close</v-btn>
+              </v-card-actions>
+            </v-card>
+          </template>
+        </wd-dialog>
       </v-card-actions>
     </v-card>
   </wd-window>

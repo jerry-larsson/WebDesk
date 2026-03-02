@@ -21,6 +21,7 @@ declare module 'vue' {
     WdContainer: typeof import('./components/framework/grid/WdContainer.vue')['default']
     WdDesktop: typeof import('./components/framework/WdDesktop.vue')['default']
     WdDesktopIcon: typeof import('./components/framework/WdDesktopIcon.vue')['default']
+    WdDialog: typeof import('./components/framework/WdDialog.vue')['default']
     WdRow: typeof import('./components/framework/grid/WdRow.vue')['default']
     WdTaskbar: typeof import('./components/framework/WdTaskbar.vue')['default']
     WdTopMenu: typeof import('./components/framework/WdTopMenu.vue')['default']

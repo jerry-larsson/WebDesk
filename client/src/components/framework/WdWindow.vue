@@ -906,6 +906,7 @@ watch(
 }
 
 .wd-window__content {
+  position: relative;
   flex: 1;
   overflow: auto;
   padding: 16px;

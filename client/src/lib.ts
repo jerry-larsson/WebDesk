@@ -1,6 +1,7 @@
 import type { App, Plugin } from 'vue'
 
 import WdDesktop from '@/components/framework/WdDesktop.vue'
+import WdDialog from '@/components/framework/WdDialog.vue'
 import WdTaskbar from '@/components/framework/WdTaskbar.vue'
 import WdTopMenu from '@/components/framework/WdTopMenu.vue'
 import WdTopMenuDropdown from '@/components/framework/WdTopMenuDropdown.vue'
@@ -18,6 +19,7 @@ export type { WdTopMenuItem } from '@/composables/useTopMenu'
 
 export {
   WdDesktop,
+  WdDialog,
   WdTaskbar,
   WdTopMenu,
   WdTopMenuDropdown,
@@ -27,6 +29,7 @@ export {
 
 const components: Array<[string, object]> = [
   ['WdDesktop', WdDesktop],
+  ['WdDialog', WdDialog],
   ['WdTaskbar', WdTaskbar],
   ['WdTopMenu', WdTopMenu],
   ['WdTopMenuDropdown', WdTopMenuDropdown],
