@@ -1,11 +1,26 @@
 <template>
-  <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center pr-0 overflow-hidden" color="surface"
-    elevation="0" rounded="0" :style="topMenuStyle">
+  <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center pr-0 overflow-hidden" color="surface" elevation="0"
+    rounded="0" :style="topMenuStyle">
     <div class="wd-top-menu__section wd-top-menu__section--start d-flex align-center ga-0">
       <div v-if="showFullscreenWindowIcon" class="wd-top-menu__window-info d-flex align-center px-2">
         <v-icon :icon="focusedWindowIcon" size="18" />
       </div>
+
+      <v-menu location="bottom start">
+        <template #activator="{ props: activatorProps }">
+          <v-btn v-if="!$slots.activator" v-bind="activatorProps" class="px-2" density="comfortable" rounded="0"
+            variant="text">
+            <span class="text-body-large font-weight-bold">WebDesk</span>
+          </v-btn>
+
+          <slot name="activator" v-bind="activatorProps"></slot>
+        </template>
+
+        <wd-top-menu-dropdown :items="mainMenuItems ?? []" />
+      </v-menu>
+
       <slot name="start" />
+
       <v-menu v-if="showCollapsedFocusedMenuItems" location="bottom start">
         <template #activator="{ props: activatorProps }">
           <v-btn v-bind="activatorProps" class="px-2" density="comfortable" rounded="0" variant="text"
@@ -30,7 +45,8 @@
             @click.stop="onCloseFocusedWindow" />
         </template>
 
-        <v-btn v-if="!isMobile" @click="windowManager.toggleFullscreenMode()" icon="mdi-fullscreen" rounded variant="text" size="small"></v-btn>
+        <v-btn v-if="!isMobile" @click="windowManager.toggleFullscreenMode()" icon="mdi-fullscreen" rounded
+          variant="text" size="small"></v-btn>
       </div>
 
       <slot name="end" />
@@ -41,15 +57,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWindowManager } from '@/composables/useWindowManager'
-import { useTopMenu } from '@/composables/useTopMenu'
+import { useTopMenu, type WdTopMenuItem } from '@/composables/useTopMenu'
 import { useResponsiveMode } from '@/composables/useResponsiveMode'
 
 const props = withDefaults(
   defineProps<{
     height?: number
+    mainMenuItems?: readonly WdTopMenuItem[]
   }>(),
   {
-    height: 30,
+    height: 30
   },
 )
 

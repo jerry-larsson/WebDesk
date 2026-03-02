@@ -27,25 +27,10 @@
                 @open="windowManager.openWindow('projects-window', { id: 'projects-window' })" />
             </template>
 
-            <wd-top-menu>
-              <template #start>
-                <v-menu location="bottom start">
-                  <template #activator="{ props: activatorProps }">
-                    <v-btn v-if="!$slots.activator" v-bind="activatorProps" class="px-2" density="comfortable"
-                      rounded="0" variant="text">
-                      <span class="text-body-large font-weight-bold">WebDesk</span>
-                    </v-btn>
-
-                    <slot name="activator" v-bind="activatorProps"></slot>
-                  </template>
-
-                  <wd-top-menu-dropdown :items="mainMenuItems" />
-                </v-menu>
-              </template>
-
-              <template #end>
+            <wd-top-menu :main-menu-items="mainMenuItems">
+              <!-- <template #end>
                 <v-btn icon="mdi-logout" size="small" rounded variant="text" @click="auth.logout()" />
-              </template>
+              </template> -->
             </wd-top-menu>
 
             <wd-taskbar></wd-taskbar>
@@ -108,6 +93,14 @@ const mainMenuItems = computed<WdTopMenuItem[]>(() => [
     children: [],
     onClick: () => {
       windowManager.openWindow('blank-window', { id: 'blank-window-' + windowManager.windows.value.length + 1 })
+    }
+  },
+  { id: 'logout-divider', type: 'divider' },
+  {
+    id: 'logout', label: 'Logout', icon: 'mdi-logout',
+    children: [],
+    onClick: () => {
+      auth.logout()
     }
   }
 ]);

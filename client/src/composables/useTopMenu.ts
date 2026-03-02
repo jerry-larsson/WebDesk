@@ -4,6 +4,7 @@ import { useWindowManager } from './useWindowManager'
 export interface WdTopMenuItem {
   id: string
   label?: string
+  icon?: string
   shortcut?: string
   disabled?: boolean
   visible?: boolean

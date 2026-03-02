@@ -3,13 +3,8 @@
     <template v-for="item in visibleItems" :key="item.id">
       <v-divider v-if="item.type === 'divider'" class="my-1" />
 
-      <v-menu
-        v-else-if="item.children?.length"
-        location="end top"
-        :open-on-hover="!isTouchInput"
-        open-on-click
-        :close-on-content-click="false"
-      >
+      <v-menu v-else-if="item.children?.length" location="end top" :open-on-hover="!isTouchInput" open-on-click
+        :close-on-content-click="false">
         <template #activator="{ props: activatorProps }">
           <v-list-item v-bind="activatorProps" :disabled="item.disabled" :title="item.label" class="text-body-medium">
             <template #append>
@@ -22,9 +17,11 @@
         <wd-top-menu-dropdown :items="item.children" />
       </v-menu>
 
-      <v-list-item v-else :disabled="item.disabled" :title="item.label" @click="onItemClick(item)" class="text-body-medium">
+      <v-list-item v-else :disabled="item.disabled" :title="item.label" @click="onItemClick(item)"
+        class="text-body-medium">
         <template #append>
           <span v-if="item.shortcut" class="text-body-medium text-medium-emphasis">{{ item.shortcut }}</span>
+          <v-icon v-if="item.icon" :icon="item.icon"></v-icon>
         </template>
       </v-list-item>
     </template>
