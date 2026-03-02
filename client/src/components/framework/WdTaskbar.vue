@@ -109,6 +109,7 @@ const applyDesktopWorkAreaOffset = () => {
 
   const reservedSpace = props.height + (props.margin * 2)
   desktopEl.style.setProperty('--wd-taskbar-space', `calc(${reservedSpace}px + var(--wd-safe-bottom, 0px))`)
+  desktopEl.dispatchEvent(new CustomEvent('wd-workarea-change'))
 }
 
 const clearDesktopWorkAreaOffset = () => {
@@ -117,6 +118,7 @@ const clearDesktopWorkAreaOffset = () => {
   if (!desktopEl) return
 
   desktopEl.style.removeProperty('--wd-taskbar-space')
+  desktopEl.dispatchEvent(new CustomEvent('wd-workarea-change'))
 }
 
 const byTopMost = (a: WdManagedWindow, b: WdManagedWindow) => b.state.zIndex - a.state.zIndex

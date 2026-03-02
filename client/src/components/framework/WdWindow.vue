@@ -195,6 +195,11 @@ const layoutVersion = ref(0)
 const isLifecycleReady = ref(false)
 const snapPreview = ref<SnapPreviewBounds | null>(null)
 let layoutObserver: ResizeObserver | null = null
+let desktopWorkareaChangeEl: HTMLElement | null = null
+const onDesktopWorkareaChange = () => {
+  layoutVersion.value += 1
+  syncLayoutToWorkArea()
+}
 const onViewportResize = () => {
   viewportWidth.value = window.innerWidth
   viewportHeight.value = window.innerHeight
@@ -629,6 +634,8 @@ onMounted(() => {
   window.addEventListener('resize', onViewportResize)
   const workAreaEl = desktop?.workAreaRef?.value
   const desktopEl = desktop?.desktopRef.value
+  desktopWorkareaChangeEl = desktopEl ?? null
+  desktopWorkareaChangeEl?.addEventListener('wd-workarea-change', onDesktopWorkareaChange as EventListener)
   if (typeof ResizeObserver !== 'undefined') {
     layoutObserver = new ResizeObserver(() => {
       layoutVersion.value += 1
@@ -685,6 +692,8 @@ onBeforeUnmount(() => {
   snapPreview.value = null
   emit('closed', getEventState())
   window.removeEventListener('resize', onViewportResize)
+  desktopWorkareaChangeEl?.removeEventListener('wd-workarea-change', onDesktopWorkareaChange as EventListener)
+  desktopWorkareaChangeEl = null
   layoutObserver?.disconnect()
   layoutObserver = null
   const activeMenuWindowId = registeredMenuWindowId.value ?? props.windowId?.trim()

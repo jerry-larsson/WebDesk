@@ -2,7 +2,7 @@
   <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center pr-0 overflow-hidden" color="surface"
     elevation="0" rounded="0" :style="topMenuStyle">
     <div class="wd-top-menu__section wd-top-menu__section--start d-flex align-center ga-0">
-      <div v-if="showFullscreenWindowIcon" class="wd-top-menu__window-info d-flex align-center pl-2">
+      <div v-if="showFullscreenWindowIcon" class="wd-top-menu__window-info d-flex align-center px-2">
         <v-icon :icon="focusedWindowIcon" size="18" />
       </div>
       <slot name="start" />
@@ -91,6 +91,7 @@ const applyDesktopWorkAreaOffset = () => {
   if (!desktopEl) return
 
   desktopEl.style.setProperty('--wd-top-menu-space', `calc(${props.height}px + var(--wd-safe-top, 0px))`)
+  desktopEl.dispatchEvent(new CustomEvent('wd-workarea-change'))
 }
 
 const clearDesktopWorkAreaOffset = () => {
@@ -99,6 +100,7 @@ const clearDesktopWorkAreaOffset = () => {
   if (!desktopEl) return
 
   desktopEl.style.removeProperty('--wd-top-menu-space')
+  desktopEl.dispatchEvent(new CustomEvent('wd-workarea-change'))
 }
 
 watch(() => props.height, applyDesktopWorkAreaOffset, { immediate: true })
