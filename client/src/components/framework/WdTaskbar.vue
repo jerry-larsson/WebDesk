@@ -53,6 +53,7 @@
     <div v-if="$slots['end']" class="wd-taskbar__section wd-taskbar__section--end d-flex align-center justify-end ga-1">
       <slot name="end" />
     </div>
+
   </v-sheet>
 </template>
 
@@ -77,16 +78,18 @@ const props = withDefaults(
     margin?: number
   }>(),
   {
-    height: 48,
+    height: 50,
     margin: 0,
   },
 )
 
 const taskbarStyle = computed(() => ({
-  height: `${props.height}px`,
+  height: `calc(${props.height}px + var(--wd-safe-bottom, 0px))`,
+  paddingBottom: 'calc(var(--wd-safe-bottom, 0px) + 2px)',
+  boxSizing: 'border-box' as const,
   left: `${props.margin}px`,
   right: `${props.margin}px`,
-  bottom: `calc(${props.margin}px + var(--wd-safe-bottom, 0px))`,
+  bottom: `${props.margin}px`,
 }))
 
 const taskbarRef = ref<HTMLElement | { $el?: Element | null } | null>(null)
@@ -187,11 +190,22 @@ const focusFromPreview = (id: string) => {
 <style scoped>
 .wd-taskbar {
   position: absolute;
+  overflow: hidden;
   z-index: 1000;
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.16);
   background-color: rgba(var(--v-theme-surface), 0.72) !important;
   backdrop-filter: blur(22px) saturate(140%);
   -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+.wd-taskbar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--wd-safe-bottom, 0px);
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  pointer-events: none;
 }
 
 .wd-taskbar__section {
