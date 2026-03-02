@@ -178,6 +178,7 @@ let layoutObserver: ResizeObserver | null = null
 const onViewportResize = () => {
   viewportWidth.value = window.innerWidth
   viewportHeight.value = window.innerHeight
+  syncLayoutToWorkArea()
 }
 
 const windowClasses = computed(() => [
@@ -310,6 +311,38 @@ const ensureWithinWorkArea = () => {
   if (clampedY !== posY.value) {
     posY.value = clampedY
   }
+}
+
+const applySnappedLayout = () => {
+  if (isMobileFullscreen.value) return
+  if (!snappedSide.value) return
+
+  const rect = getDesktopRect()
+  if (!rect) return
+
+  if (snappedSide.value === 'maximized') {
+    posX.value = rect.offsetX
+    posY.value = rect.offsetY
+    winWidth.value = rect.width
+    winHeight.value = rect.height
+    return
+  }
+
+  const halfWidth = rect.width / 2
+  posX.value = snappedSide.value === 'left'
+    ? rect.offsetX
+    : rect.offsetX + halfWidth
+  posY.value = rect.offsetY
+  winWidth.value = halfWidth
+  winHeight.value = rect.height
+}
+
+const syncLayoutToWorkArea = () => {
+  if (snappedSide.value) {
+    applySnappedLayout()
+    return
+  }
+  ensureWithinWorkArea()
 }
 
 const onCloseClick = () => {
@@ -590,7 +623,7 @@ onMounted(() => {
   if (typeof ResizeObserver !== 'undefined') {
     layoutObserver = new ResizeObserver(() => {
       layoutVersion.value += 1
-      ensureWithinWorkArea()
+      syncLayoutToWorkArea()
     })
     if (workAreaEl) layoutObserver.observe(workAreaEl)
     if (desktopEl && desktopEl !== workAreaEl) layoutObserver.observe(desktopEl)
@@ -608,7 +641,7 @@ onMounted(() => {
   if (!props.minimized) {
     bringToFront()
   }
-  ensureWithinWorkArea()
+  syncLayoutToWorkArea()
   emit('open', getEventState())
   isLifecycleReady.value = true
 })
@@ -689,7 +722,7 @@ watch(
     }
 
     if (!isMobile) {
-      ensureWithinWorkArea()
+      syncLayoutToWorkArea()
     }
   },
 )

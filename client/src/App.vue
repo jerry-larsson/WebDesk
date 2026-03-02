@@ -49,6 +49,11 @@ const currentTime = computed(() => format(now.value, 'HH:mm'))
 const clockInterval = setInterval(() => {
   now.value = new Date()
 }, 1000)
+const updateAppViewportHeight = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  const viewportHeight = Math.round(window.visualViewport?.height ?? window.innerHeight)
+  document.documentElement.style.setProperty('--wd-app-height', `${viewportHeight}px`)
+}
 
 const mainMenuItems = computed<WdTopMenuItem[]>(() => [
   {
@@ -76,16 +81,43 @@ const mainMenuItems = computed<WdTopMenuItem[]>(() => [
 
 onBeforeUnmount(() => {
   clearInterval(clockInterval)
+  window.removeEventListener('resize', updateAppViewportHeight)
+  window.removeEventListener('orientationchange', updateAppViewportHeight)
+  window.visualViewport?.removeEventListener('resize', updateAppViewportHeight)
+  window.visualViewport?.removeEventListener('scroll', updateAppViewportHeight)
 })
 
 onMounted(() => {
+  updateAppViewportHeight()
+  window.addEventListener('resize', updateAppViewportHeight)
+  window.addEventListener('orientationchange', updateAppViewportHeight)
+  window.visualViewport?.addEventListener('resize', updateAppViewportHeight)
+  window.visualViewport?.addEventListener('scroll', updateAppViewportHeight)
   windowManager.openPersistedWindows()
 })
 </script>
 
 <style scoped>
+:global(:root) {
+  --wd-app-height: 100svh;
+  --wd-safe-top: env(safe-area-inset-top, 0px);
+  --wd-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+:global(html),
+:global(body),
+:global(#app) {
+  width: 100%;
+  height: var(--wd-app-height);
+  min-height: 100svh;
+  margin: 0;
+  overflow: hidden;
+}
+
 .webdesk-app,
 .webdesk-main {
-  height: 100vh;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
 }
 </style>

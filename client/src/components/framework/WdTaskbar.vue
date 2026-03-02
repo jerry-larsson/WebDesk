@@ -86,7 +86,7 @@ const taskbarStyle = computed(() => ({
   height: `${props.height}px`,
   left: `${props.margin}px`,
   right: `${props.margin}px`,
-  bottom: `${props.margin}px`,
+  bottom: `calc(${props.margin}px + var(--wd-safe-bottom, 0px))`,
 }))
 
 const taskbarRef = ref<HTMLElement | { $el?: Element | null } | null>(null)
@@ -105,7 +105,7 @@ const applyDesktopWorkAreaOffset = () => {
   if (!desktopEl) return
 
   const reservedSpace = props.height + (props.margin * 2)
-  desktopEl.style.setProperty('--wd-taskbar-space', `${reservedSpace}px`)
+  desktopEl.style.setProperty('--wd-taskbar-space', `calc(${reservedSpace}px + var(--wd-safe-bottom, 0px))`)
 }
 
 const clearDesktopWorkAreaOffset = () => {

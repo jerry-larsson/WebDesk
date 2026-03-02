@@ -51,7 +51,8 @@ const props = withDefaults(
 )
 
 const topMenuStyle = computed(() => ({
-  height: `${props.height}px`,
+  height: `calc(${props.height}px + var(--wd-safe-top, 0px))`,
+  paddingTop: 'var(--wd-safe-top, 0px)',
 }))
 const windowManager = useWindowManager()
 const topMenu = useTopMenu()
@@ -85,7 +86,7 @@ const applyDesktopWorkAreaOffset = () => {
   const desktopEl = topMenuEl?.closest('.wd-desktop') as HTMLElement | null
   if (!desktopEl) return
 
-  desktopEl.style.setProperty('--wd-top-menu-space', `${props.height}px`)
+  desktopEl.style.setProperty('--wd-top-menu-space', `calc(${props.height}px + var(--wd-safe-top, 0px))`)
 }
 
 const clearDesktopWorkAreaOffset = () => {

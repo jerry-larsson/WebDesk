@@ -79,3 +79,21 @@ This project is built with [Vuetify](https://vuetifyjs.com/en/), a UI Library wi
 [MIT](http://opensource.org/licenses/MIT)
 
 Copyright (c) 2016-present Vuetify, LLC
+
+## Docker package
+
+Build a runnable Docker image and export it as a compressed archive in one command:
+
+```bash
+yarn docker:package
+```
+
+Output:
+- `artifacts/webdesk-ui-latest.tar.gz`
+
+Use it on any machine with Docker:
+
+```bash
+docker load -i artifacts/webdesk-ui-latest.tar.gz
+docker run --rm -p 8080:80 webdesk-ui:latest
+```
