@@ -1,5 +1,3 @@
-import type { App, Plugin } from 'vue'
-
 import WdAuthGate from '@/components/framework/WdAuthGate.vue'
 import WdDesktop from '@/components/framework/WdDesktop.vue'
 import WdDialog from '@/components/framework/WdDialog.vue'
@@ -56,8 +54,8 @@ const components: Array<[string, object]> = [
   ['WdWindow', WdWindow],
 ]
 
-export const WebDeskPlugin: Plugin = {
-  install(app: App) {
+export const WebDeskPlugin = {
+  install(app: any) {
     for (const [name, component] of components) {
       app.component(name, component)
     }
