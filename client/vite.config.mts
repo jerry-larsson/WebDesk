@@ -72,6 +72,10 @@ export default defineConfig(({ mode }) => {
         emptyOutDir: true,
         rollupOptions: {
           external: ['vue', 'vuetify', 'pinia', 'vue-i18n'],
+          output: {
+            // Auto-load extracted library stylesheet for consumers.
+            banner: "import './index.css';",
+          },
         },
       }
       : undefined,
