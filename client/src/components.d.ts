@@ -12,13 +12,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     BlankWindow: typeof import('./components/windows/BlankWindow.vue')['default']
-    CqCol: typeof import('./components/framework/grid/CqCol.vue')['default']
-    CqContainer: typeof import('./components/framework/grid/CqContainer.vue')['default']
-    CqRow: typeof import('./components/framework/grid/CqRow.vue')['default']
-    DynamicSfcWindow: typeof import('./components/windows/DynamicSfcWindow.vue')['default']
     HelloWorldWindow: typeof import('./components/windows/HelloWorldWindow.vue')['default']
     ProjectsWindow: typeof import('./components/windows/ProjectsWindow.vue')['default']
-    VsCodeWindow: typeof import('./components/windows/VsCodeWindow.vue')['default']
     WdAuthGate: typeof import('./components/framework/WdAuthGate.vue')['default']
     WdCol: typeof import('./components/framework/grid/WdCol.vue')['default']
     WdContainer: typeof import('./components/framework/grid/WdContainer.vue')['default']
