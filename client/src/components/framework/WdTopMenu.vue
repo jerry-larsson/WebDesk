@@ -1,5 +1,5 @@
 <template>
-  <v-navigation-drawer v-model="isMainMenuDrawerOpen" class="wd-top-menu__main-drawer" location="start" temporary
+  <v-navigation-drawer v-model="isMainMenuDrawerOpen" class="wd-top-menu__main-drawer" style="user-select: none" location="start" temporary
     width="280" :style="mainMenuDrawerStyle" :attach="drawerAttachTarget" absolute>
     <wd-top-menu-dropdown :items="mainMenuItems ?? []" :on-item-invoked="closeMainMenuDrawer" />
   </v-navigation-drawer>
@@ -208,6 +208,8 @@ const onCloseFocusedWindow = () => {
 
 <style>
 .wd-top-menu__main-drawer.v-navigation-drawer {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
   border-right: 1px solid rgba(var(--v-theme-on-surface), 0.16);
   background: linear-gradient(
     180deg,
@@ -217,8 +219,6 @@ const onCloseFocusedWindow = () => {
   backdrop-filter: blur(26px) saturate(165%);
   -webkit-backdrop-filter: blur(26px) saturate(165%);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.16) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.12) inset,
     0 16px 30px rgba(0, 0, 0, 0.24),
     0 -10px 18px rgba(0, 0, 0, 0.1);
 }
