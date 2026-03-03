@@ -1,4 +1,9 @@
 <template>
+  <v-navigation-drawer v-model="isMainMenuDrawerOpen" class="wd-top-menu__main-drawer" location="start" temporary
+    width="280" :style="mainMenuDrawerStyle" :attach="drawerAttachTarget" absolute>
+    <wd-top-menu-dropdown :items="mainMenuItems ?? []" :on-item-invoked="closeMainMenuDrawer" />
+  </v-navigation-drawer>
+
   <v-sheet ref="topMenuRef" class="wd-top-menu d-flex align-center pr-0 overflow-hidden" color="surface" elevation="0"
     rounded="0" :style="topMenuStyle">
     <div class="wd-top-menu__section wd-top-menu__section--start d-flex align-center ga-0">
@@ -6,18 +11,12 @@
         <v-icon :icon="focusedWindowIcon" size="18" />
       </div>
 
-      <v-menu location="bottom start">
-        <template #activator="{ props: activatorProps }">
-          <v-btn v-if="!$slots.activator" v-bind="activatorProps" class="px-2" density="comfortable" rounded="0"
-            variant="text">
-            <span class="text-body-large font-weight-bold">WebDesk</span>
-          </v-btn>
+      <v-btn v-if="!$slots.activator" v-bind="mainMenuActivatorProps" class="px-2" density="comfortable" rounded="0"
+        variant="text">
+        <span class="text-body-large font-weight-bold">{{ mainMenuLabel }}</span>
+      </v-btn>
 
-          <slot name="activator" v-bind="activatorProps"></slot>
-        </template>
-
-        <wd-top-menu-dropdown :items="mainMenuItems ?? []" />
-      </v-menu>
+      <slot name="activator" v-bind="mainMenuActivatorProps"></slot>
 
       <slot name="start" />
 
@@ -64,9 +63,11 @@ const props = withDefaults(
   defineProps<{
     height?: number
     mainMenuItems?: readonly WdTopMenuItem[]
+    mainMenuLabel?: string
   }>(),
   {
-    height: 30
+    height: 30,
+    mainMenuLabel: 'WebDesk',
   },
 )
 
@@ -74,9 +75,14 @@ const topMenuStyle = computed(() => ({
   height: `calc(${props.height}px + var(--wd-safe-top, 0px))`,
   paddingTop: 'var(--wd-safe-top, 0px)',
 }))
+const mainMenuDrawerStyle = computed(() => ({
+  top: `calc(${props.height}px + var(--wd-safe-top, 0px))`,
+  height: `calc(100% - (${props.height}px + var(--wd-safe-top, 0px)) - var(--wd-taskbar-space, 0px))`,
+}))
 const windowManager = useWindowManager()
 const topMenu = useTopMenu()
 const { isMobile } = useResponsiveMode()
+const isMainMenuDrawerOpen = ref(false)
 const focusedWindow = computed(() => windowManager.focusedWindow.value)
 const focusedMenuItems = computed(() => topMenu.focusedMenuItems.value)
 const showCollapsedFocusedMenuItems = computed(() => isMobile.value && focusedMenuItems.value.length > 0)
@@ -93,6 +99,17 @@ const focusedWindowTitle = computed(() => {
 })
 
 const topMenuRef = ref<HTMLElement | { $el?: Element | null } | null>(null)
+const drawerAttachTarget = ref<HTMLElement | null>(null)
+const mainMenuActivatorProps = computed(() => ({
+  onClick: () => {
+    isMainMenuDrawerOpen.value = !isMainMenuDrawerOpen.value
+  },
+}))
+const mainMenuLabel = computed(() => props.mainMenuLabel)
+
+const closeMainMenuDrawer = () => {
+  isMainMenuDrawerOpen.value = false
+}
 
 const getTopMenuElement = (): HTMLElement | null => {
   if (!topMenuRef.value) return null
@@ -124,10 +141,12 @@ watch(() => props.height, applyDesktopWorkAreaOffset, { immediate: true })
 
 onMounted(() => {
   applyDesktopWorkAreaOffset()
+  drawerAttachTarget.value = getTopMenuElement()?.closest('.wd-desktop') as HTMLElement | null
 })
 
 onBeforeUnmount(() => {
   clearDesktopWorkAreaOffset()
+  drawerAttachTarget.value = null
 })
 
 const onMinimizeFocusedWindow = () => {
@@ -184,5 +203,27 @@ const onCloseFocusedWindow = () => {
 .wd-top-menu__close-btn:focus-visible {
   background-color: #c42b1c !important;
   color: #ffffff !important;
+}
+</style>
+
+<style>
+.wd-top-menu__main-drawer.v-navigation-drawer {
+  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--v-theme-surface), 0.72) 0%,
+    rgba(var(--v-theme-surface), 0.58) 100%
+  ) !important;
+  backdrop-filter: blur(26px) saturate(165%);
+  -webkit-backdrop-filter: blur(26px) saturate(165%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset,
+    0 16px 30px rgba(0, 0, 0, 0.24),
+    0 -10px 18px rgba(0, 0, 0, 0.1);
+}
+
+.wd-top-menu__main-drawer.v-navigation-drawer .v-navigation-drawer__content {
+  background: transparent !important;
 }
 </style>

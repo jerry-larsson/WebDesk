@@ -14,7 +14,7 @@
           </v-list-item>
         </template>
 
-        <wd-top-menu-dropdown :items="item.children" />
+        <wd-top-menu-dropdown :items="item.children" :on-item-invoked="onItemInvoked" />
       </v-menu>
 
       <v-list-item v-else :disabled="item.disabled" :title="item.label" @click="onItemClick(item)"
@@ -34,6 +34,7 @@ import type { WdTopMenuItem } from '@/composables/useTopMenu'
 
 const props = defineProps<{
   items: readonly WdTopMenuItem[]
+  onItemInvoked?: () => void
 }>()
 
 const visibleItems = computed(() => props.items.filter(item => item.visible !== false))
@@ -45,5 +46,10 @@ const isTouchInput = computed(() => {
 const onItemClick = (item: WdTopMenuItem) => {
   if (item.disabled) return
   item.onClick?.()
+  props.onItemInvoked?.()
+}
+
+const onItemInvoked = () => {
+  props.onItemInvoked?.()
 }
 </script>
