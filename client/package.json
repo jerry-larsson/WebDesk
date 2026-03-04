@@ -5,15 +5,17 @@
   "version": "0.0.0",
   "main": "./dist/library/index.js",
   "module": "./dist/library/index.js",
-  "types": "./dist/library/lib.d.ts",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/library/lib.d.ts",
-      "import": "./dist/library/index.js"
+      "types": "./index.d.ts",
+      "import": "./dist/library/index.js",
+      "default": "./dist/library/index.js"
     }
   },
   "files": [
-    "dist/library"
+    "dist/library",
+    "index.d.ts"
   ],
   "scripts": {
     "dev": "vite",
@@ -21,6 +23,8 @@
     "build:lib": "run-s build:lib:bundle build:lib:types",
     "build:lib:bundle": "vite build --mode library",
     "build:lib:types": "vue-tsc -p tsconfig.lib.json",
+    "prepack": "npm run build:lib",
+    "prepare": "npm run build:lib",
     "preview": "vite preview",
     "build-only": "vite build",
     "docker:package": "node ./scripts/docker-package.mjs",
