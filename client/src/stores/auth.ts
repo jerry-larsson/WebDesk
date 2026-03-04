@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { getWebDeskAuthConfig } from '@/auth/config'
-import type { AuthCredentials, AuthError, AuthSession, AuthStateSnapshot, AuthStatus, AuthUser } from '@/auth/types'
+import { getWebDeskAuthConfig } from '../auth/config'
+import type { AuthCredentials, AuthError, AuthSession, AuthStateSnapshot, AuthStatus, AuthUser } from '../auth/types'
 
 const AUTH_USER_SNAPSHOT_STORAGE_KEY = 'wd:auth-user-snapshot:v1'
 
@@ -215,4 +215,3 @@ export const useAuthStore = defineStore('auth', () => {
     clearError,
   }
 })
-

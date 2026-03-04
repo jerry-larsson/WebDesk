@@ -26,8 +26,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { wdDesktopContextKey, type WdDesktopContext } from './WdDesktopContext'
-import { useWindowManager, type WdManagedWindowState } from '@/composables/useWindowManager'
-import { useResponsiveMode } from '@/composables/useResponsiveMode'
+import { useWindowManager, type WdManagedWindowState } from '../../composables/useWindowManager'
+import { useResponsiveMode } from '../../composables/useResponsiveMode'
 
 const props = withDefaults(
   defineProps<{

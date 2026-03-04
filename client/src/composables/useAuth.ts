@@ -1,6 +1,6 @@
 import { storeToRefs } from 'pinia'
-import { useAuthStore } from '@/stores/auth'
-import type { AuthCredentials } from '@/auth/types'
+import { useAuthStore } from '../stores/auth'
+import type { AuthCredentials } from '../auth/types'
 
 export const useAuth = () => {
   const store = useAuthStore()
@@ -47,4 +47,3 @@ export const useRequireAuth = () => {
     requireAuth,
   }
 }
-

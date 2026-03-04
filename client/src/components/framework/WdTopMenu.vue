@@ -55,9 +55,9 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useWindowManager } from '@/composables/useWindowManager'
-import { useTopMenu, type WdTopMenuItem } from '@/composables/useTopMenu'
-import { useResponsiveMode } from '@/composables/useResponsiveMode'
+import { useWindowManager } from '../../composables/useWindowManager'
+import { useTopMenu, type WdTopMenuItem } from '../../composables/useTopMenu'
+import { useResponsiveMode } from '../../composables/useResponsiveMode'
 
 const props = withDefaults(
   defineProps<{

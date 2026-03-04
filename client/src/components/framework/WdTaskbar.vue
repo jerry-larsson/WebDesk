@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useWindowManager, type WdManagedWindow } from '@/composables/useWindowManager'
+import { useWindowManager, type WdManagedWindow } from '../../composables/useWindowManager'
 
 interface WdTaskbarWindowGroup {
   key: string

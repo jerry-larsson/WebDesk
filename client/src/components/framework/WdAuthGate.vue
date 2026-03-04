@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useAuth } from '@/composables/useAuth'
+import { useAuth } from '../../composables/useAuth'
 
 const props = withDefaults(
   defineProps<{

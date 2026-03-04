@@ -46,8 +46,8 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
-import { useAuth } from '@/composables/useAuth'
-import type { AuthCredentials, LoginFieldSpec } from '@/auth/types'
+import { useAuth } from '../../composables/useAuth'
+import type { AuthCredentials, LoginFieldSpec } from '../../auth/types'
 
 const defaultFields: readonly LoginFieldSpec[] = [
   {

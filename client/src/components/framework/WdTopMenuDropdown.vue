@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { WdTopMenuItem } from '@/composables/useTopMenu'
+import type { WdTopMenuItem } from '../../composables/useTopMenu'
 
 const props = defineProps<{
   items: readonly WdTopMenuItem[]

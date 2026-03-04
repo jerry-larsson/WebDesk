@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { wdDesktopContextKey, type WdDesktopContext } from './WdDesktopContext'
-import { useTopMenu, type WdTopMenuItem } from '@/composables/useTopMenu'
+import { useTopMenu, type WdTopMenuItem } from '../../composables/useTopMenu'
 
 type ResizeDirection = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 type SnapSide = 'left' | 'right' | 'maximized' | null
