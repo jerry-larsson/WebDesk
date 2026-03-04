@@ -5,11 +5,12 @@
   "version": "0.0.0",
   "main": "./dist/library/index.js",
   "module": "./dist/library/index.js",
-  "types": "./index.d.ts",
+  "types": "./dist/library/index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.d.ts",
+      "types": "./dist/library/index.d.ts",
       "import": "./dist/library/index.js",
+      "require": "./dist/library/index.js",
       "default": "./dist/library/index.js"
     }
   },
@@ -22,7 +23,9 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "build:lib": "run-s build:lib:bundle build:lib:types",
     "build:lib:bundle": "vite build --mode library",
-    "build:lib:types": "vue-tsc -p tsconfig.lib.json",
+    "build:lib:types": "run-s build:lib:types:declarations build:lib:types:entry",
+    "build:lib:types:declarations": "vue-tsc -p tsconfig.lib.json",
+    "build:lib:types:entry": "node ./scripts/build-lib-types-entry.mjs",
     "prepack": "npm run build:lib",
     "prepare": "npm run build:lib",
     "preview": "vite preview",
